@@ -1,0 +1,2 @@
+../Core/Src/uart.c:17:6:Uart_Flush	1
+../Core/Src/uart.c:22:9:Uart_Read	2
