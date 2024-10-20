@@ -1,7 +1,0 @@
-../Drivers/SCSLib/Src/SCSerail.c:15:5:readSCSTimeOut	5
-../Drivers/SCSLib/Src/SCSerail.c:40:5:readSCS	5
-../Drivers/SCSLib/Src/SCSerail.c:65:5:writeByteSCS	2
-../Drivers/SCSLib/Src/SCSerail.c:75:5:writeSCS	3
-../Drivers/SCSLib/Src/SCSerail.c:88:6:nopDelay	1
-../Drivers/SCSLib/Src/SCSerail.c:95:6:rFlushSCS	1
-../Drivers/SCSLib/Src/SCSerail.c:102:6:wFlushSCS	2

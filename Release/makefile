@@ -10,7 +10,7 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
--include Drivers/SCSLib/Src/subdir.mk
+-include Drivers/SCSLib/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
@@ -61,8 +61,8 @@ all: main-build
 main-build: STM32\ Motion\ Tracking\ Mount.elf secondary-outputs
 
 # Tool invocations
-STM32\ Motion\ Tracking\ Mount.elf STM32\ Motion\ Tracking\ Mount.map: $(OBJS) $(USER_OBJS) /home/blumenkratz/.config/STM32CubeIDE/workspace_1.16.1/STM32\ Motion\ Tracking\ Mount/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "STM32 Motion Tracking Mount.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/blumenkratz/.config/STM32CubeIDE/workspace_1.16.1/STM32 Motion Tracking Mount/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32 Motion Tracking Mount.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+STM32\ Motion\ Tracking\ Mount.elf STM32\ Motion\ Tracking\ Mount.map: $(OBJS) $(USER_OBJS) /mnt/Mind\ Drive/ROOT_VAULT/Projects/Motion\ Tracking\ Mount/STM32-Motion-Tracking-Mount/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "STM32 Motion Tracking Mount.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/mnt/Mind Drive/ROOT_VAULT/Projects/Motion Tracking Mount/STM32-Motion-Tracking-Mount/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32 Motion Tracking Mount.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
