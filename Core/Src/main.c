@@ -44,9 +44,44 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f4xx.h"
 #include "uart.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "SCServo.h"
+#include <stdio.h>
+#include <errno.h>
+#include <sys/unistd.h> // STDOUT_FILENO, STDERR_FILENO
+#include <string.h>
+
+/*
+int _write(int file, char *data, int len) {
+    if ((file != STDOUT_FILENO) && (file != STDERR_FILENO)) {
+        errno = EBADF;
+        return -1;
+    }
+
+    // Adding carriage return before newline for compatibility with more terminals
+    uint8_t buffer[1024];
+    int buf_index = 0;
+    for (int i = 0; i < len; i++) {
+        if (data[i] == '
+') {
+            buffer[buf_index++] = '';  // Add CR before LF
+        }
+        buffer[buf_index++] = data[i];
+        if (buf_index >= sizeof(buffer) - 1) {  // Flush the buffer when full
+            HAL_UART_Transmit(&huart2, buffer, buf_index, HAL_MAX_DELAY);
+            buf_index = 0;
+        }
+    }
+    if (buf_index > 0) {
+        HAL_UART_Transmit(&huart2, buffer, buf_index, HAL_MAX_DELAY);
+    }
+    return len;
+}*/
+//extern void setup(void);
+//extern void loop(void);
 
 /* USER CODE END Includes */
 
@@ -89,6 +124,66 @@ static void MX_USART2_UART_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+
+/*
+int _write(int file, char *data, int len) {
+    if ((file != STDOUT_FILENO) && (file != STDERR_FILENO)) {
+        errno = EBADF;
+        return -1;
+    }
+
+    // Adding carriage return before newline for compatibility with more terminals
+    uint8_t buffer[1024];
+    int buf_index = 0;
+    for (int i = 0; i < len; i++) {
+        if (data[i] == '
+') {
+            buffer[buf_index++] = '';  // Add CR before LF
+        }
+        buffer[buf_index++] = data[i];
+        if (buf_index >= sizeof(buffer) - 1) {  // Flush the buffer when full
+            HAL_UART_Transmit(&huart2, buffer, buf_index, HAL_MAX_DELAY);
+            buf_index = 0;
+        }
+    }
+    if (buf_index > 0) {
+        HAL_UART_Transmit(&huart2, buffer, buf_index, HAL_MAX_DELAY);
+    }
+    return len;
+}*/
+
+
+
+void setup()
+{
+  Uart_Init(115200);
+  HAL_Delay(1000);
+}
+
+void loop()
+{
+  int ID = Ping(1); // Assuming Ping is a function that returns an integer ID
+  char buffer[50]; // Buffer to hold the string to transmit
+
+  if(ID != -1){
+    // Format the message with ID and transmit
+    sprintf(buffer, "
+Servo ID: %d
+", ID);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    HAL_Delay(100);
+  }else{
+    // Handle the error case
+    sprintf(buffer, "
+Ping servo ID error!
+");
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    HAL_Delay(2000);
+  }
+
+
+}
+
 int main(void)
 {
 
@@ -121,12 +216,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+
+	setup();
+    while (1)
   {
     /* USER CODE END WHILE */
-	  HAL_GPIO_TogglePin (LD2_GPIO_Port, LD2_Pin);
-	  HAL_Delay(5000);
+
+//	  HAL_GPIO_TogglePin (LD2_GPIO_Port, LD2_Pin);
+//	  HAL_Delay(5000);
     /* USER CODE BEGIN 3 */
+	  loop();
   }
   /* USER CODE END 3 */
 }
@@ -143,24 +242,22 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
-  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(); // Implement error handling
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -169,12 +266,11 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(); // Implement error handling
   }
 }
 
