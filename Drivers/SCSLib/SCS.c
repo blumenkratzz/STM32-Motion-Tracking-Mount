@@ -1,17 +1,18 @@
 /*
  * SCS.c
- * SCS´®ÐÐ¶æ»úÐ­Òé³ÌÐò
- * ÈÕÆÚ: 2022.3.30
- * ×÷Õß: 
+ * SCSï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ð­ï¿½ï¿½ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½: 2022.3.30
+ * ï¿½ï¿½ï¿½ï¿½: 
  */
+
 
 #include <stdlib.h>
 #include "INST.h"
 #include "SCS.h"
 
-static uint8_t Level =1;//¶æ»ú·µ»ØµÈ¼¶
-static uint8_t End = 0;//´¦ÀíÆ÷´óÐ¡¶Ë½á¹¹
-static uint8_t Error = 0;//¶æ»ú×´Ì¬
+static uint8_t Level =1;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ØµÈ¼ï¿½
+static uint8_t End = 0;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Ë½á¹¹
+static uint8_t Error = 0;//ï¿½ï¿½ï¿½×´Ì¬
 uint8_t syncReadRxPacketIndex;
 uint8_t syncReadRxPacketLen;
 uint8_t *syncReadRxPacket;
@@ -24,8 +25,8 @@ uint8_t getSCSErr(void)
 	return Error;
 }
 
-//1¸ö16Î»Êý²ð·ÖÎª2¸ö8Î»Êý
-//DataLÎªµÍÎ»£¬DataHÎª¸ßÎ»
+//1ï¿½ï¿½16Î»ï¿½ï¿½ï¿½ï¿½ï¿½Îª2ï¿½ï¿½8Î»ï¿½ï¿½
+//DataLÎªï¿½ï¿½Î»ï¿½ï¿½DataHÎªï¿½ï¿½Î»
 void Host2SCS(uint8_t *DataL, uint8_t* DataH, int Data)
 {
 	if(End){
@@ -37,8 +38,8 @@ void Host2SCS(uint8_t *DataL, uint8_t* DataH, int Data)
 	}
 }
 
-//2¸ö8Î»Êý×éºÏÎª1¸ö16Î»Êý
-//DataLÎªµÍÎ»£¬DataHÎª¸ßÎ»
+//2ï¿½ï¿½8Î»ï¿½ï¿½ï¿½ï¿½ï¿½Îª1ï¿½ï¿½16Î»ï¿½ï¿½
+//DataLÎªï¿½ï¿½Î»ï¿½ï¿½DataHÎªï¿½ï¿½Î»
 int SCS2Host(uint8_t DataL, uint8_t DataH)
 {
 	int Data;
@@ -85,8 +86,8 @@ void writeBuf(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen, uint8_t 
 	writeSCS(&CheckSum, 1);
 }
 
-//ÆÕÍ¨Ð´Ö¸Áî
-//¶æ»úID£¬MemAddrÄÚ´æ±íµØÖ·£¬Ð´ÈëÊý¾Ý£¬Ð´Èë³¤¶È
+//ï¿½ï¿½Í¨Ð´Ö¸ï¿½ï¿½
+//ï¿½ï¿½ï¿½IDï¿½ï¿½MemAddrï¿½Ú´ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½Ð´ï¿½ë³¤ï¿½ï¿½
 int genWrite(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen)
 {
 	rFlushSCS();
@@ -95,8 +96,8 @@ int genWrite(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen)
 	return Ack(ID);
 }
 
-//Òì²½Ð´Ö¸Áî
-//¶æ»úID£¬MemAddrÄÚ´æ±íµØÖ·£¬Ð´ÈëÊý¾Ý£¬Ð´Èë³¤¶È
+//ï¿½ì²½Ð´Ö¸ï¿½ï¿½
+//ï¿½ï¿½ï¿½IDï¿½ï¿½MemAddrï¿½Ú´ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½Ð´ï¿½ë³¤ï¿½ï¿½
 int regWrite(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen)
 {
 	rFlushSCS();
@@ -105,7 +106,7 @@ int regWrite(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen)
 	return Ack(ID);
 }
 
-//Òì²½Ð´Ö´ÐÐÐÐ
+//ï¿½ì²½Ð´Ö´ï¿½ï¿½ï¿½ï¿½
 int regAction(uint8_t ID)
 {
 	rFlushSCS();
@@ -114,8 +115,8 @@ int regAction(uint8_t ID)
 	return Ack(ID);
 }
 
-//Í¬²½Ð´Ö¸Áî
-//¶æ»úID[]Êý×é£¬IDNÊý×é³¤¶È£¬MemAddrÄÚ´æ±íµØÖ·£¬Ð´ÈëÊý¾Ý£¬Ð´Èë³¤¶È
+//Í¬ï¿½ï¿½Ð´Ö¸ï¿½ï¿½
+//ï¿½ï¿½ï¿½ID[]ï¿½ï¿½ï¿½é£¬IDNï¿½ï¿½ï¿½é³¤ï¿½È£ï¿½MemAddrï¿½Ú´ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½Ð´ï¿½ë³¤ï¿½ï¿½
 void syncWrite(uint8_t ID[], uint8_t IDN, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen)
 {
 	uint8_t mesLen = ((nLen+1)*IDN+4);
@@ -167,8 +168,8 @@ int writeWord(uint8_t ID, uint8_t MemAddr, uint16_t wDat)
 	return Ack(ID);
 }
 
-//¶ÁÖ¸Áî
-//¶æ»úID£¬MemAddrÄÚ´æ±íµØÖ·£¬·µ»ØÊý¾ÝnData£¬Êý¾Ý³¤¶ÈnLen
+//ï¿½ï¿½Ö¸ï¿½ï¿½
+//ï¿½ï¿½ï¿½IDï¿½ï¿½MemAddrï¿½Ú´ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½nDataï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½nLen
 int Read(uint8_t ID, uint8_t MemAddr, uint8_t *nData, uint8_t nLen)
 {
 	int Size;
@@ -204,7 +205,7 @@ int Read(uint8_t ID, uint8_t MemAddr, uint8_t *nData, uint8_t nLen)
 	return Size;
 }
 
-//¶Á1×Ö½Ú£¬³¬Ê±·µ»Ø-1
+//ï¿½ï¿½1ï¿½Ö½Ú£ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½-1
 int readByte(uint8_t ID, uint8_t MemAddr)
 {
 	uint8_t bDat;
@@ -216,7 +217,7 @@ int readByte(uint8_t ID, uint8_t MemAddr)
 	}
 }
 
-//¶Á2×Ö½Ú£¬³¬Ê±·µ»Ø-1
+//ï¿½ï¿½2ï¿½Ö½Ú£ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½-1
 int readWord(uint8_t ID, uint8_t MemAddr)
 {	
 	uint8_t nDat[2];
@@ -229,7 +230,7 @@ int readWord(uint8_t ID, uint8_t MemAddr)
 	return wDat;
 }
 
-//PingÖ¸Áî£¬·µ»Ø¶æ»úID£¬³¬Ê±·µ»Ø-1
+//PingÖ¸ï¿½î£¬ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½IDï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½-1
 int	Ping(uint8_t ID)
 {
 	uint8_t bBuf[4];
@@ -281,7 +282,7 @@ int checkHead(void)
 	return 1;
 }
 
-//Ö¸ÁîÓ¦´ð
+//Ö¸ï¿½ï¿½Ó¦ï¿½ï¿½
 int	Ack(uint8_t ID)
 {
 	uint8_t bBuf[4];
