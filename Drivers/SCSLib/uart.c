@@ -15,7 +15,7 @@ UART_HandleTypeDef UART_InitStructure;
 配置USART1，端口映射(TX)PA9/(RX)PA10
 USART1作为舵机串口
 ------------------*/
-#ifdef USE_USART1_
+//#ifdef USE_USART1_
 void Uart_Init(uint32_t baudRate)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -44,14 +44,14 @@ void Uart_Init(uint32_t baudRate)
   HAL_UART_Init(&UART_InitStructure);
 }
 
-#endif
+//#endif
 
 /*---------------
 使用USE_USART2_宏定义
 配置USART2，端口映射(TX)PA2/(RX)PA3
 USART2作为舵机串口
 ------------------*/
-//#ifdef USE_USART2_
+#ifdef USE_USART2_
 void Uart_Init(uint32_t baudRate)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -80,7 +80,7 @@ void Uart_Init(uint32_t baudRate)
   HAL_UART_Init(&UART_InitStructure);
 }
 
-//#endif
+#endif
 
 void Uart_Send(uint8_t *buf , uint16_t len)
 {
