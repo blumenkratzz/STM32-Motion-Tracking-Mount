@@ -13,7 +13,9 @@ extern UART_HandleTypeDef huart1; // For servo communication
 
 void setup()
 {
-	Uart_Init(115200);
+  Uart_Init(1000000);
+
+	//Uart_Init(115200);
   HAL_Delay(1000);
 }
 
