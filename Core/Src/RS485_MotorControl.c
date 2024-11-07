@@ -13,9 +13,9 @@ extern UART_HandleTypeDef huart1; // For servo communication
 
 void setup()
 {
-  Uart_Init(1000000);
+  //Uart_Init(1000000);
 
-	//Uart_Init(115200);
+  Uart_Init(115200);
   HAL_Delay(1000);
 }
 
@@ -177,98 +177,18 @@ void displayRegisterData(void)
   HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
+void rotateConstantSpeed(uint8_t ID){
 
-/*void displayRegisterData(void)
-{
-  int Pos;
-  int Speed;
-  int Load;
-  int Voltage;
-  int Temper;
-  int Move;
-  int Current;
-  if(FeedBack(1)!=-1){
-    Pos = ReadPos(-1);
-    Speed = ReadSpeed(-1);
-    Load = ReadLoad(-1);
-    Voltage = ReadVoltage(-1);
-    Temper = ReadTemper(-1);
-    Move = ReadMove(-1);
-		Current = ReadCurrent(-1);
-		//printf("Pos:%d\n", Pos);
-		//printf("Speed:%d\n", Speed);
-		//printf("Load:%d\n", Load);
-		//printf("Voltage:%d\n", Voltage);
-		//printf("Temper:%d\n", Temper);
-		//printf("Move:%d\n", Move);
-    //printf("Current:%d\n", Current);
-    HAL_Delay(10);
-  }else{
-		//printf("FeedBack err\n");
-    HAL_Delay(2000);
-  }
-  Pos = ReadPos(1);
-  if(Pos!=-1){
-    //printf("Servo position:%d\n", Pos);
-    //HAL_Delay(10);
-  }else{
-    //printf("read position err\n");
-    HAL_Delay(500);
-  }
-
-  Voltage = ReadVoltage(1);
-  if(Voltage!=-1){
-		//printf("Servo Voltage:%d\n", Voltage);
-    HAL_Delay(10);
-  }else{
-    //printf("read Voltage err\n");
-    HAL_Delay(500);
-  }
-
-  Temper = ReadTemper(1);
-  if(Temper!=-1){
-    //printf("Servo temperature:%d\n", Temper);
-    HAL_Delay(10);
-  }else{
-    //printf("read temperature err\n");
-    HAL_Delay(500);
-  }
-
-  Speed = ReadSpeed(1);
-  if(Speed!=-1){
-    //printf("Servo Speed:%d\n", Speed);
-    HAL_Delay(10);
-  }else{
-    //printf("read Speed err\n");
-    HAL_Delay(500);
-  }
-
-  Load = ReadLoad(1);
-  if(Load!=-1){
-    //printf("Servo Load:%d\n", Load);
-    HAL_Delay(10);
-  }else{
-    //printf("read Load err\n");
-    HAL_Delay(500);
-  }
-
-  Current = ReadCurrent(1);
-  if(Current!=-1){
-    //printf("Servo Current:%d\n", Current);
-    HAL_Delay(10);
-  }else{
-    //printf("read Current err\n");
-    HAL_Delay(500);
-  }
-
-  Move = ReadMove(1);
-  if(Move!=-1){
-    //printf("Servo Move:%d\n", Move);
-    HAL_Delay(10);
-  }else{
-    //printf("read Move err\n");
-    HAL_Delay(500);
-  }
-  //printf("\n");
+WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, acceleration A=50 (50*100 steps/sec²)
+  displayRegisterData();
+  HAL_Delay(4000); //5 revolutions
+  WriteSpe(ID, 0, 30); // Servo (ID1) stops rotating (V=0) with acceleration A=50 (50*100 steps/sec²)
+  displayRegisterData();
+  HAL_Delay(2000);
+  WriteSpe(ID, -2000, 30); // Servo (ID1) rotates in reverse at max speed V=-2000 steps/sec, acceleration A=50 (50*100 steps/sec²)
+  displayRegisterData();
+  HAL_Delay(1250); // 2000= 2.75 revolutions
+  WriteSpe(ID, 0, 30); // Servo (ID1) stops rotating (V=0) with acceleration A=50 (50*100 steps/sec²)
+  displayRegisterData();
+  HAL_Delay(2000);
 }
-*/

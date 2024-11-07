@@ -35,6 +35,8 @@
 UART_HandleTypeDef huart2;
 extern void setup(void);
 extern void loop(void);
+extern void rotateConstantSpeed(uint8_t);
+
 static void MX_USART2_UART_Init(void);
 
 void SystemClock_Config(void)
@@ -93,12 +95,15 @@ int main()
 ";
 //		HAL_UART_Transmit(&huart2, (uint8_t*)testMsg, strlen(testMsg), HAL_MAX_DELAY);
 		loop();
-		displayRegisterData();
-		WritePosEx(1, 4095, 2250, 50);//¶æ»ú(ID1),ÒÔ×î¸ßËÙ¶ÈV=2250²½/Ãë,¼ÓËÙ¶ÈA=50(50*100²½/Ãë^2),ÔËÐÐÖÁP1=4095
-		HAL_Delay(2270);//[(P1-P0)/V]*1000+[V/(A*100)]*1000
 
-	  	WritePosEx(1, 0, 2250, 50);//¶æ»ú(ID1),ÒÔ×î¸ßËÙ¶ÈV=2250²½/Ãë,¼ÓËÙ¶ÈA=50(50*100²½/Ãë^2),ÔËÐÐÖÁP1=0
-	  	HAL_Delay(2270);//[(P1-P0)/V]*1000+[V/(A*100)]*1000
+		WheelMode(1);
+		rotateConstantSpeed(1);
+		//WritePosEx(1, 4095, 2250, 30); // Servo motor (ID1), with maximum speed V=2250 steps/sec, acceleration A=50 (50*100 steps/sec²), moves to position P1=4095
+		//HAL_Delay(2270); // Delay calculation: [(P1-P0)/V]*1000 + [V/(A*100)]*1000
+
+	  	//WritePosEx(1, 0, 2250, 30); // Servo motor (ID1), with maximum speed V=2250 steps/sec, acceleration A=50 (50*100 steps/sec²), moves to position P1=0
+	  	//HAL_Delay(2270); // Delay calculation: [(P1-P0)/V]*1000 + [V/(A*100)]*1000
+
 
 	}
 }
