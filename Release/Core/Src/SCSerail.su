@@ -1,7 +1,0 @@
-../Core/Src/SCSerail.c:15:5:readSCSTimeOut	24	static
-../Core/Src/SCSerail.c:40:5:readSCS	24	static
-../Core/Src/SCSerail.c:65:5:writeByteSCS	0	static
-../Core/Src/SCSerail.c:75:5:writeSCS	12	static
-../Core/Src/SCSerail.c:88:6:nopDelay	0	static
-../Core/Src/SCSerail.c:95:6:rFlushSCS	0	static
-../Core/Src/SCSerail.c:102:6:wFlushSCS	8	static
