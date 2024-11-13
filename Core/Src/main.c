@@ -38,11 +38,6 @@
 #include "SCServo.h"
 #include "uart.h"
 
-
-///* USER CODE END Includes */
-//
-///* Private typedef -----------------------------------------------------------*/
-///* USER CODE BEGIN PTD */
 #define  FPS2HZ   0x02
 #define  FPS4HZ   0x03
 #define  FPS8HZ   0x04
@@ -73,7 +68,6 @@ extern void setup(void);
 extern void loop(void);
 extern void rotateConstantSpeed(uint8_t);
 extern float rotateToTargetColumn(uint8_t);
-
 static void MX_USART2_UART_Init(void);
 
 //variable declaration
