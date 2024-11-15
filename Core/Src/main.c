@@ -47,7 +47,7 @@
 #define  MLX90640_ADDR 0x33 //default address
 #define	 RefreshRate FPS16HZ
 #define  TA_SHIFT 8 //Default shift for MLX90640 in open air
-#define  TARGET_MIN_TEMP 33
+#define  TARGET_MIN_TEMP 27
 #define  TARGET_MAX_TEMP 37
 
 //calibration for average count thingy
@@ -58,7 +58,7 @@
 #define ROWS 24
 #define COLUMNS 32
 
-#define GROUP_SIZE 1//Consider Wiring this up to a potentiometer to adjust accuracy
+#define GROUP_SIZE 4//Consider Wiring this up to a potentiometer to adjust accuracy
 
 I2C_HandleTypeDef *hi2c;
 extern I2C_HandleTypeDef hi2c2;
@@ -67,7 +67,7 @@ extern I2C_HandleTypeDef hi2c2;
 extern void setup(void);
 extern void loop(void);
 extern void rotateConstantSpeed(uint8_t);
-extern float rotateToTargetColumn(uint8_t);
+extern float rotateToTargetColumn(uint8_t, int);
 static void MX_USART2_UART_Init(void);
 
 //variable declaration
@@ -362,7 +362,7 @@ start
 
 	//DELAY BETWEEN EACH CALL FOR THE FUNCTION
 
-						HAL_Delay(25);
+//						HAL_Delay(25);
 						return targetDetected;
 }
 
@@ -567,7 +567,7 @@ Parameter extraction failed with error code: %d
 	            		loop();
 	            		//WheelMode(1);
 	            		//rotateConstantSpeed(1);	    return angle;
-	            		rotateToTargetColumn(highestColumnIndex);
+	            		rotateToTargetColumn(highestColumnIndex, targetDetected);
 	                }
 	                break;
 

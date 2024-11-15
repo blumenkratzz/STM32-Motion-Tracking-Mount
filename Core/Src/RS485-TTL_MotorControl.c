@@ -45,13 +45,13 @@ void loop()
   char buffer[50]; // Buffer to hold the string to transmit
   if(ID!=-1){
 	  // Format the message with ID and transmit
-	sprintf(buffer, "
+	/*sprintf(buffer, "
 Servo ID: %d
 ", ID);
 	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 //    printf("Servo ID:%d
 ", ID);
-    HAL_Delay(2000);
+    HAL_Delay(2000);*/
   }
   else{
 	sprintf(buffer, "
@@ -241,7 +241,7 @@ WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, ac
   //displayRegisterData();
   HAL_Delay(2000);
 }
-float rotateToTargetColumn(uint8_t columnIndex){
+float rotateToTargetColumn(uint8_t columnIndex, int targetDetected){
 
 	 const int COLUMNS = 32;
 	    const float SENSOR_FOV = 55.0f; // Sensor field of view in degrees
@@ -277,8 +277,9 @@ float rotateToTargetColumn(uint8_t columnIndex){
 		// Overwrite last servo mode, and make it respond to "Positional commands"
 		// SMS_STS_MODE Corresponds to register # 33
 		writeByte(motorID, 33, 0);
-
+		//if (targetDetected==1){
 	    WritePosEx(motorID, position, speed, acceleration);
+		//}
 	    // Calculate delay based on movement distance
 	    // Assuming a linear relationship for simplicity
 	    uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_MAX / 2) / (float)MOTOR_POSITION_MAX * 2000); // Adjust the multiplier as needed
