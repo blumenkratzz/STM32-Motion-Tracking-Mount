@@ -61,7 +61,9 @@
 #define GROUP_SIZE 4//Consider Wiring this up to a potentiometer to adjust accuracy
 
 I2C_HandleTypeDef *hi2c;
-extern I2C_HandleTypeDef hi2c2;
+//extern I2C_HandleTypeDef hi2c1;
+//volatile I2C_HandleTypeDef hi2c1;
+//volatile I2C_HandleTypeDef hi2c3;
 
 // Servo Motor external declarations
 extern void setup(void);
@@ -434,11 +436,12 @@ int main()
 		/* USER CODE BEGIN SysInit */
 
 		/* USER CODE END SysInit */
-		MX_I2C1_Init();
-		MX_I2C2_Init();
-		MX_I2C3_Init();
+		//MX_I2C1_Init();
+		//MX_I2C2_Init();
+		//MX_I2C3_Init();
+		MLX90640_I2CInit();
 		//I2C_HandleTypeDef *hi2c;
-		hi2c = &hi2c2; //need at least 1 channel to pass in the address for everything to load properly
+		hi2c = &hi2c1; //need at least 1 channel to pass in the address for everything to load properly
 
 		/* USER CODE BEGIN 2 */
 
@@ -568,6 +571,18 @@ Parameter extraction failed with error code: %d
 	            		//WheelMode(1);
 	            		//rotateConstantSpeed(1);	    return angle;
 	            		rotateToTargetColumn(highestColumnIndex, targetDetected);
+
+						sprintf(MLX90640_Test_Buffer, "hi2c1: %p &hi2c1: %p 
+", hi2c1.Instance, &hi2c1);
+						HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
+						sprintf(MLX90640_Test_Buffer, "hi2c2: %p &hi2c2: %p 
+", hi2c2.Instance, &hi2c2);
+						HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
+						sprintf(MLX90640_Test_Buffer, "hi2c3: %p &hi2c3: %p 
+", hi2c3.Instance , &hi2c3);
+						HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
+
+
 	                }
 	                break;
 
