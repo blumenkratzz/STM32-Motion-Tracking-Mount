@@ -29,6 +29,9 @@ Ping指令测试,测试总线上相应ID舵机是否就绪,广播指令只适用
 
 extern UART_HandleTypeDef huart2; // For console output
 extern UART_HandleTypeDef huart1; // For servo communication
+int Motor_ID_Horizontal = -1;
+int Motor_ID_Vertical = -1;
+
 char buffer[255]; // Buffer to hold the string to transmit
 
 void setup()
@@ -37,32 +40,85 @@ void setup()
 
   //Uart_Init(115200);
   HAL_Delay(1000);
+  //unLockEprom(1);//打开EPROM保存功能
+  //writeByte(1, SMS_STS_ID, 2);//ID
+  //LockEprom(2);//关闭EPROM保存功能
+
 }
 
 void loop()
 {
-  int ID = Ping(1);
-  char buffer[50]; // Buffer to hold the string to transmit
-  if(ID!=-1){
+
+  // No longer need to scan the assigned motorID, after writing/hardcoding new ID to EEPROM
+  //scanMotors();
+
+  Motor_ID_Horizontal = Ping(1);
+  Motor_ID_Vertical = Ping(2);
+  char buffer[100]; // Buffer to hold the string to transmit
+  if((Motor_ID_Horizontal!=-1) && (Motor_ID_Vertical!=-1)){
 	  // Format the message with ID and transmit
-	/*sprintf(buffer, "
-Servo ID: %d
-", ID);
+	sprintf(buffer, "
+Servo ID at X: %d, Servo ID at Y: %d
+", Motor_ID_Horizontal, Motor_ID_Vertical);
 	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 //    printf("Servo ID:%d
 ", ID);
-    HAL_Delay(2000);*/
+    //HAL_Delay(100);
   }
+
   else{
 	sprintf(buffer, "
-Ping servo ID error!
-");
+Ping servo ID error! Motor ID at X: %d, Motor ID at Y: %d
+", Motor_ID_Horizontal, Motor_ID_Vertical);
 	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 //    printf("Ping servo ID error!
 ");
-    HAL_Delay(2000);
+    //HAL_Delay(100);
   }
+
 }
+
+void scanMotors() {
+    char buffer[255];
+    int motorIDs[255];
+    int motorCount = 0;
+    for (int id = 0; id <= 255; id++) {
+        int result = Ping(id);
+        if (result != -1) {
+            // Motor with ID 'id' is present
+            motorIDs[motorCount++] = id;
+            sprintf(buffer, "Found motor with ID: %d
+", id);
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        }
+        HAL_Delay(10); // Small delay between pings
+    }
+
+    if (motorCount == 0) {
+        sprintf(buffer, "No motors found on the bus.
+");
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    } else {
+        sprintf(buffer, "Total motors found: %d
+", motorCount);
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+        // Now assign motors to variables
+        if (motorCount >= 1) {
+            Motor_ID_Horizontal = motorIDs[0];
+            sprintf(buffer, "Assigned Motor_ID_Horizontal = %d
+", Motor_ID_Horizontal);
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        }
+        if (motorCount >= 2) {
+            Motor_ID_Vertical = motorIDs[1];
+            sprintf(buffer, "Assigned Motor_ID_Vertical = %d
+", Motor_ID_Vertical);
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        }
+    }
+}
+
 
 void displayRegisterData(void)
 {
@@ -265,7 +321,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected){
 	        position = MOTOR_POSITION_MAX;
 
 	    // Move motor to position
-	    uint8_t motorID = 1;   // Adjust motor ID as needed
+	    uint8_t motorID = Motor_ID_Horizontal;   // Adjust motor ID as needed
 	    uint16_t speed = 2250; // Set desired speed
 	    uint8_t acceleration = 40; // Set desired acceleration
 
@@ -292,3 +348,55 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected){
   	//HAL_Delay(2270); // Delay calculation: [(P1-P0)/V]*1000 + [V/(A*100)]*1000
   	return angle;
 }
+
+float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
+    const int ROWS = 24;
+    const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
+
+    // Define motor parameters
+    const float MOTOR_MIN_ANGLE = -180.0f; // Minimum motor angle in degrees
+    const float MOTOR_MAX_ANGLE = 180.0f;  // Maximum motor angle in degrees
+    const int MOTOR_POSITION_MIN = 0;      // Minimum motor position
+    const int MOTOR_POSITION_MAX = 4095;   // Maximum motor position
+
+    // Map row index to angle over the full motor rotation range
+    float angle = ((rowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
+
+    // Map angle to motor position
+    int position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN))
+                        / (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE) + MOTOR_POSITION_MIN);
+
+    // Ensure position is within valid range
+    if (position < MOTOR_POSITION_MIN)
+        position = MOTOR_POSITION_MIN;
+    else if (position > MOTOR_POSITION_MAX)
+        position = MOTOR_POSITION_MAX;
+
+    // Move motor to position
+    uint8_t motorID = Motor_ID_Vertical;   // Adjust motor ID as needed (assuming a different motor for vertical movement)
+    uint16_t speed = 2250; // Set desired speed
+    uint8_t acceleration = 40; // Set desired acceleration
+
+    // Print debug information
+    sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d
+", rowIndex, angle, position);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+
+	// Overwrite last servo mode, and make it respond to "Positional commands"
+	// SMS_STS_MODE Corresponds to register # 33
+	writeByte(motorID, 33, 0);
+    // Move the motor if target is detected
+    if (targetDetected == 1) {
+        WritePosEx(motorID, position, speed, acceleration);
+    }
+
+    // Calculate delay based on movement distance
+    uint32_t movementTime = (uint32_t)(fabs(position - (MOTOR_POSITION_MAX / 2))
+                            / (float)MOTOR_POSITION_MAX * 2000); // Adjust as needed
+    HAL_Delay(1000);
+
+    return angle;
+}
+
+
