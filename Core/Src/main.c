@@ -57,7 +57,7 @@
 #define SENSOR_ARRAY_SIZE 768
 #define ROWS 24
 #define COLUMNS 32
-
+//
 #define GROUP_SIZE 4//Consider Wiring this up to a potentiometer to adjust accuracy
 
 
@@ -287,6 +287,8 @@ int printer(I2C_HandleTypeDef *hi2c, uint16_t *eeMLX90640, paramsMLX90640 *mlx90
 ");
     HAL_UART_Transmit(&huart2, (uint8_t *)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
+    *targetDetected=0;
+
     for (int i = 0; i < 768; i++) // For loop to print temperature variables
     {
         if (i % 32 == 0)
@@ -453,13 +455,13 @@ int main()
 
 		//SET PROPER MODE FOR SENSOR 2
 
-		MLX90640_SetRefreshRate(sensors[1].hi2c,MLX90640_ADDR, RefreshRate);
-		MLX90640_SetChessMode(sensors[1].hi2c,MLX90640_ADDR);
+		//MLX90640_SetRefreshRate(sensors[1].hi2c,MLX90640_ADDR, RefreshRate);
+		//MLX90640_SetChessMode(sensors[1].hi2c,MLX90640_ADDR);
 
 		//SET PROPER MODE FOR SENSOR 3
 
-		//MLX90640_SetRefreshRate(sensors[2].hi2c,MLX90640_ADDR, RefreshRate);
-		//MLX90640_SetChessMode(sensors[2].hi2c,MLX90640_ADDR);
+		MLX90640_SetRefreshRate(sensors[2].hi2c,MLX90640_ADDR, RefreshRate);
+		MLX90640_SetChessMode(sensors[2].hi2c,MLX90640_ADDR);
 
 
 		// Initialize other variables as needed
@@ -482,7 +484,7 @@ start
 ");
 	    HAL_UART_Transmit(&huart2, (uint8_t *)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
-		for (int i = 0; i < 2; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
+		for (int i = 1; i < 3; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
 		{
 			sprintf(MLX90640_Test_Buffer, "
 Debug info for sensor %.2d
@@ -501,7 +503,7 @@ Debug info for sensor %.2d
 		int max_index = 0;
 		float max_avg = sensors[0].avg;
 
-		for (int i = 2; i < 2; i++)
+		for (int i = 1; i < 3; i++)
 		{
 		    if (sensors[i].avg > max_avg)
 		    {
@@ -517,11 +519,13 @@ Debug info for sensor %.2d
 		// Process the selected sensor using a switch case
 		switch (max_index)
 		{
-/*		    case 0:
+		    case 0:
 		        // Sensor 1 has the highest average temperature
 		        sensors[0].highestColumnIndex = avgBySector(sensors[0].mlx90640To,&sensors[0].highestRowGroupStart,&sensors[0].highestColGroupStart);
 		        printer(sensors[0].hi2c, sensors[0].eeMLX90640, &sensors[0].mlx90640,sensors[0].mlx90640To, sensors[0].frame,&sensors[0].targetDetected, &sensors[0].highestRowGroupStart, &sensors[0].highestColGroupStart);
 		        setLEDState(sensors[0].targetDetected);
+				rotateToTargetColumn(sensors[0].highestColGroupStart, sensors[0].targetDetected);
+				rotateToTargetRow(sensors[0].highestRowGroupStart, sensors[0].targetDetected);
 		        break;
 
 		    case 1:
@@ -529,26 +533,30 @@ Debug info for sensor %.2d
 		        sensors[1].highestColumnIndex = avgBySector(sensors[1].mlx90640To,&sensors[1].highestRowGroupStart,&sensors[1].highestColGroupStart);
 		        printer(sensors[1].hi2c, sensors[1].eeMLX90640, &sensors[1].mlx90640,sensors[1].mlx90640To, sensors[1].frame,&sensors[1].targetDetected, &sensors[1].highestRowGroupStart, &sensors[1].highestColGroupStart);
 		        setLEDState(sensors[1].targetDetected);
+				rotateToTargetColumn(sensors[1].highestColGroupStart, sensors[1].targetDetected);
+				rotateToTargetRow(sensors[1].highestRowGroupStart, sensors[1].targetDetected);
 		        break;
 
 		    case 2:
-		        // Sensor 3 has the highest average temperature
+		        //Sensor 3 has the highest average temperature
 		        sensors[2].highestColumnIndex = avgBySector(sensors[2].mlx90640To,&sensors[2].highestRowGroupStart,&sensors[2].highestColGroupStart);
 		        printer(sensors[2].hi2c, sensors[2].eeMLX90640, &sensors[2].mlx90640,sensors[2].mlx90640To, sensors[2].frame,&sensors[2].targetDetected, &sensors[2].highestRowGroupStart, &sensors[2].highestColGroupStart);
 		        setLEDState(sensors[2].targetDetected);
+				rotateToTargetColumn(sensors[2].highestColGroupStart, sensors[2].targetDetected);
+				rotateToTargetRow(sensors[2].highestRowGroupStart, sensors[2].targetDetected);
 		        break;
-*/
+
 		    default:
 		        // Handle unexpected cases if necessary
 		        // Sensor 1 has the highest average temperature
-		        sensors[0].highestColumnIndex = avgBySector(sensors[0].mlx90640To,&sensors[0].highestRowGroupStart,&sensors[0].highestColGroupStart);
-		        printer(sensors[0].hi2c, sensors[0].eeMLX90640, &sensors[0].mlx90640,sensors[0].mlx90640To, sensors[0].frame,&sensors[0].targetDetected, &sensors[0].highestRowGroupStart, &sensors[0].highestColGroupStart);
-		        setLEDState(sensors[0].targetDetected);
+		        //sensors[0].highestColumnIndex = avgBySector(sensors[0].mlx90640To,&sensors[0].highestRowGroupStart,&sensors[0].highestColGroupStart);
+		        //printer(sensors[0].hi2c, sensors[0].eeMLX90640, &sensors[0].mlx90640,sensors[0].mlx90640To, sensors[0].frame,&sensors[0].targetDetected, &sensors[0].highestRowGroupStart, &sensors[0].highestColGroupStart);
+		        //setLEDState(sensors[0].targetDetected);
 
 		        // Sensor 2 has the highest average temperature
-		        sensors[1].highestColumnIndex = avgBySector(sensors[1].mlx90640To,&sensors[1].highestRowGroupStart,&sensors[1].highestColGroupStart);
-		        printer(sensors[1].hi2c, sensors[1].eeMLX90640, &sensors[1].mlx90640,sensors[1].mlx90640To, sensors[1].frame,&sensors[1].targetDetected, &sensors[1].highestRowGroupStart, &sensors[1].highestColGroupStart);
-		        setLEDState(sensors[1].targetDetected);
+		        //sensors[1].highestColumnIndex = avgBySector(sensors[1].mlx90640To,&sensors[1].highestRowGroupStart,&sensors[1].highestColGroupStart);
+		        //printer(sensors[1].hi2c, sensors[1].eeMLX90640, &sensors[1].mlx90640,sensors[1].mlx90640To, sensors[1].frame,&sensors[1].targetDetected, &sensors[1].highestRowGroupStart, &sensors[1].highestColGroupStart);
+		        //setLEDState(sensors[1].targetDetected);
 		        break;
 		}
 		// Optionally, control servo motors or other actuators based on Sensor 1 data
@@ -556,8 +564,7 @@ Debug info for sensor %.2d
 		loop();
 		//WheelMode(1);
 		//rotateConstantSpeed(1);	    return angle;
-		rotateToTargetColumn(sensors[0].highestColGroupStart, sensors[0].targetDetected);
-		rotateToTargetRow(sensors[1].highestRowGroupStart, sensors[1].targetDetected);
+
 		}
 	    return 0;
 }

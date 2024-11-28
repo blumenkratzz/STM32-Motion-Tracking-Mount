@@ -299,67 +299,74 @@ WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, ac
 }
 float rotateToTargetColumn(uint8_t columnIndex, int targetDetected){
 
-	 const int COLUMNS = 32;
-	    const float SENSOR_FOV = 55.0f; // Sensor field of view in degrees
-	    const float anglePerColumn = SENSOR_FOV / COLUMNS;
+    const int COLUMNS = 32;
+    const float SENSOR_FOV = 55.0f; // Sensor field of view in degrees
 
+    // Define motor parameters
+    const float MOTOR_MIN_ANGLE = -90.0f; // Minimum motor angle in degrees
+    const float MOTOR_MAX_ANGLE = 90.0f;  // Maximum motor angle in degrees
 
-	    // Define motor parameters
-	    const float MOTOR_MIN_ANGLE = -180.0f; // Minimum motor angle in degrees
-	    const float MOTOR_MAX_ANGLE = 180.0f;  // Maximum motor angle in degrees
-	    const int MOTOR_POSITION_MIN = 0;      // Minimum motor position
-	    const int MOTOR_POSITION_MAX = 4095;   // Maximum motor position
+    const int MOTOR_POSITION_MIN = 1024;  // Corresponds to -90°
+    const int MOTOR_POSITION_MAX = 3071;  // Corresponds to +90°
 
-	    float angle = ((columnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
-	    // Map angle to motor position
-	    int position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN)) / (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE) + MOTOR_POSITION_MIN);
+    // Map column index to angle over the sensor's field of view
+    float angle = ((columnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 
-	    // Ensure position is within valid range
-	    if (position < MOTOR_POSITION_MIN)
-	        position = MOTOR_POSITION_MIN;
-	    else if (position > MOTOR_POSITION_MAX)
-	        position = MOTOR_POSITION_MAX;
+    // Map angle to motor position
+    int position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN))
+                        / (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE) + MOTOR_POSITION_MIN);
 
-	    // Move motor to position
-	    uint8_t motorID = Motor_ID_Horizontal;   // Adjust motor ID as needed
-	    uint16_t speed = 2250; // Set desired speed
-	    uint8_t acceleration = 40; // Set desired acceleration
+    // Ensure position is within valid range
+    if (position < MOTOR_POSITION_MIN)
+        position = MOTOR_POSITION_MIN;
+    else if (position > MOTOR_POSITION_MAX)
+        position = MOTOR_POSITION_MAX;
 
-	    // Print debug information
-	    sprintf(buffer, "Rotating to column %d, angle %.2f degrees, motor position %d
-", columnIndex, angle, position);
-	    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    // Move motor to position
+    uint8_t motorID = Motor_ID_Horizontal;   // Adjust motor ID as needed
+    uint16_t speed = 2250; // Set desired speed
+    uint8_t acceleration = 40; // Set desired acceleration
 
-		// Overwrite last servo mode, and make it respond to "Positional commands"
-		// SMS_STS_MODE Corresponds to register # 33
-		writeByte(motorID, 33, 0);
-		//if (targetDetected==1){
-	    WritePosEx(motorID, position, speed, acceleration);
-		//}
-	    // Calculate delay based on movement distance
-	    // Assuming a linear relationship for simplicity
-	    uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_MAX / 2) / (float)MOTOR_POSITION_MAX * 2000); // Adjust the multiplier as needed
-	    //HAL_Delay(movementTime);
+    // Overwrite last servo mode, and make it respond to "Positional commands"
+    // SMS_STS_MODE Corresponds to register # 33
+    writeByte(motorID, 33, 0);
 
-	//WritePosEx(1, 4095, 2250, 30); // Servo motor (ID1), with maximum speed V=2250 steps/sec, acceleration A=50 (50*100 steps/sec²), moves to position P1=4095
-	//HAL_Delay(2270); // Delay calculation: [(P1-P0)/V]*1000 + [V/(A*100)]*1000
+    // Move the motor
+    if (targetDetected == 1) {
+        WritePosEx(motorID, position, speed, acceleration);
+    } else {
+        // Return to center position when no target is detected
+    	angle = 0.0f;
+    	position = (MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2;
+        WritePosEx(motorID, position, speed, acceleration);
+    }
 
-  	//WritePosEx(1, 0, 2250, 30); // Servo motor (ID1), with maximum speed V=2250 steps/sec, acceleration A=50 (50*100 steps/sec²), moves to position P1=0
-  	//HAL_Delay(2270); // Delay calculation: [(P1-P0)/V]*1000 + [V/(A*100)]*1000
-  	return angle;
+    // Calculate delay based on movement distance
+    uint32_t movementTime = (uint32_t)(fabs(position - ((MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2))
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 2000); // Adjust as needed
+    HAL_Delay(movementTime);
+
+    // Print debug information
+    sprintf(buffer, "Rotating to column %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
+", columnIndex, angle, position, movementTime, targetDetected);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+    return angle;
 }
+
 
 float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
     const int ROWS = 24;
     const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
 
     // Define motor parameters
-    const float MOTOR_MIN_ANGLE = -180.0f; // Minimum motor angle in degrees
-    const float MOTOR_MAX_ANGLE = 180.0f;  // Maximum motor angle in degrees
-    const int MOTOR_POSITION_MIN = 0;      // Minimum motor position
-    const int MOTOR_POSITION_MAX = 4095;   // Maximum motor position
+    const float MOTOR_MIN_ANGLE = -90.0f; // Minimum motor angle in degrees
+    const float MOTOR_MAX_ANGLE = 90.0f;  // Maximum motor angle in degrees
 
-    // Map row index to angle over the full motor rotation range
+    const int MOTOR_POSITION_MIN = 1024;  // Corresponds to -90°
+    const int MOTOR_POSITION_MAX = 3071;  // Corresponds to +90°
+
+    // Map row index to angle over the sensor's field of view
     float angle = ((rowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 
     // Map angle to motor position
@@ -373,30 +380,37 @@ float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
         position = MOTOR_POSITION_MAX;
 
     // Move motor to position
-    uint8_t motorID = Motor_ID_Vertical;   // Adjust motor ID as needed (assuming a different motor for vertical movement)
+    uint8_t motorID = Motor_ID_Vertical;   // Adjust motor ID as needed
     uint16_t speed = 2250; // Set desired speed
     uint8_t acceleration = 40; // Set desired acceleration
 
-    // Print debug information
-    sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d
-", rowIndex, angle, position);
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    // Overwrite last servo mode, and make it respond to "Positional commands"
+    // SMS_STS_MODE corresponds to register #33
+    writeByte(motorID, 33, 0);
 
-
-	// Overwrite last servo mode, and make it respond to "Positional commands"
-	// SMS_STS_MODE Corresponds to register # 33
-	writeByte(motorID, 33, 0);
-    // Move the motor if target is detected
+    // Move the motor
     if (targetDetected == 1) {
+        WritePosEx(motorID, position, speed, acceleration);
+    } else {
+        // Return to center position when no target is detected
+    	angle = 0.0f;
+    	position = (MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2;
         WritePosEx(motorID, position, speed, acceleration);
     }
 
     // Calculate delay based on movement distance
-    uint32_t movementTime = (uint32_t)(fabs(position - (MOTOR_POSITION_MAX / 2))
-                            / (float)MOTOR_POSITION_MAX * 2000); // Adjust as needed
-    HAL_Delay(1000);
+    uint32_t movementTime = (uint32_t)(fabs(position - ((MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2))
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 2000); // Adjust as needed
+    HAL_Delay(movementTime);
+
+    // Print debug information
+    sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
+",
+            rowIndex, angle, position, movementTime, targetDetected);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     return angle;
 }
+
 
 
