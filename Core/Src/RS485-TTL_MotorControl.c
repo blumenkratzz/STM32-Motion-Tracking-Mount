@@ -45,7 +45,85 @@ void setup()
   //LockEprom(2);//关闭EPROM保存功能
 
 }
+// Function to read a line from UART
 
+void calibrateMotors(void) {
+    char inputBuffer[32];
+    int position;
+    uint8_t motorID;
+    uint16_t speed = 2250; // Keep speed and acceleration the same
+    uint8_t acceleration = 40;
+
+    // Display instructions
+    sprintf(buffer, "
+Entering Calibration Mode.
+");
+    sprintf(buffer + strlen(buffer), "Enter 'h' to calibrate horizontal motor, 'v' for vertical motor, or 'q' to quit.
+");
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+    while (1) {
+        // Prompt for motor selection
+        sprintf(buffer, "Select motor ('h' for horizontal, 'v' for vertical, 'q' to quit): ");
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+        UART_ReadLine(inputBuffer, sizeof(inputBuffer));
+
+        if (inputBuffer[0] == 'h') {
+            motorID = Motor_ID_Horizontal;
+        } else if (inputBuffer[0] == 'v') {
+            motorID = Motor_ID_Vertical;
+        } else if (inputBuffer[0] == 'q') {
+            // Exit calibration mode
+            sprintf(buffer, "
+Exiting Calibration Mode.
+");
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+            break;
+        } else {
+            sprintf(buffer, "
+Invalid selection. Please try again.
+");
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+            continue;
+        }
+
+        // Prompt for desired position
+        sprintf(buffer, "
+Enter desired position (0 to 4095): ");
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+        UART_ReadLine(inputBuffer, sizeof(inputBuffer));
+
+        // Convert input to integer
+        position = atoi(inputBuffer);
+
+        // Validate position
+        if (position < 0 || position > 4095) {
+            sprintf(buffer, "
+Invalid position. Please enter a value between 0 and 4095.
+");
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+            continue;
+        }
+
+        // Send command to motor
+        // Overwrite last servo mode to positional commands
+        writeByte(motorID, 33, 0);
+
+        // Move motor to position
+        WritePosEx(motorID, position, speed, acceleration);
+
+        // Provide feedback
+        sprintf(buffer, "
+Motor %d moved to position %d.
+", motorID, position);
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+        // Wait for movement to complete
+        HAL_Delay(1000); // Adjust delay as needed
+    }
+}
 void loop()
 {
 
@@ -303,11 +381,12 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected){
     const float SENSOR_FOV = 55.0f; // Sensor field of view in degrees
 
     // Define motor parameters
-    const float MOTOR_MIN_ANGLE = -90.0f; // Minimum motor angle in degrees
-    const float MOTOR_MAX_ANGLE = 90.0f;  // Maximum motor angle in degrees
+       const float MOTOR_MIN_ANGLE = -75.0f; // Minimum motor angle in degrees
+       const float MOTOR_MAX_ANGLE = 75.0f;  // Maximum motor angle in degrees
 
-    const int MOTOR_POSITION_MIN = 1024;  // Corresponds to -90°
-    const int MOTOR_POSITION_MAX = 3071;  // Corresponds to +90°
+       // Calculate motor position range corresponding to -75° to +75°
+       const int MOTOR_POSITION_MIN = 1194;  // Corresponds to -75°
+       const int MOTOR_POSITION_MAX = 2901;  // Corresponds to +75°
 
     // Map column index to angle over the sensor's field of view
     float angle = ((columnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
@@ -360,11 +439,12 @@ float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
     const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
 
     // Define motor parameters
-    const float MOTOR_MIN_ANGLE = -90.0f; // Minimum motor angle in degrees
-    const float MOTOR_MAX_ANGLE = 90.0f;  // Maximum motor angle in degrees
+    const float MOTOR_MIN_ANGLE = -45.0f; // Minimum motor angle in degrees
+    const float MOTOR_MAX_ANGLE = 45.0f;  // Maximum motor angle in degrees
 
-    const int MOTOR_POSITION_MIN = 1024;  // Corresponds to -90°
-    const int MOTOR_POSITION_MAX = 3071;  // Corresponds to +90°
+    // Calculate motor position range corresponding to -45° to +45°
+    const int MOTOR_POSITION_MIN = 1536;  // Corresponds to -45°
+    const int MOTOR_POSITION_MAX = 2560;  // Corresponds to +45°
 
     // Map row index to angle over the sensor's field of view
     float angle = ((rowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
