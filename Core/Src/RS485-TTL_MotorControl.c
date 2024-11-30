@@ -406,6 +406,9 @@ WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, ac
   HAL_Delay(2000);
 }
 float rotateToTargetColumn(uint8_t columnIndex, int targetDetected, int sensorNumber){
+	//The sensor datasheet indicates that Column 1 starts from the right, and Column 32 ends on the left.
+	//This inverts the column index so that invertedColumnIndex ranges from 31 to 0
+	uint8_t invertedColumnIndex = COLUMNS - 1 - columnIndex;
     float MOTOR_MIN_ANGLE;
     float MOTOR_MAX_ANGLE;
     int MOTOR_POSITION_MIN;
@@ -455,7 +458,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected, int sensorNu
 
     if (targetDetected == 1) {
         // Map column index to angle over the sensor's field of view
-        angle = ((columnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
+        angle = ((invertedColumnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 
         // Map angle to motor position
         position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN))
@@ -477,8 +480,9 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected, int sensorNu
     WritePosEx(motorID, position, speed, acceleration);
 
     // Calculate delay based on movement distance
+    // Note: At selected speed and acceleration parameters the 360° revolution takes around 2000ms
     uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_CENTER)
-                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 2000); // Adjust as needed
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 800);
     HAL_Delay(movementTime);
 
     // Print debug information
