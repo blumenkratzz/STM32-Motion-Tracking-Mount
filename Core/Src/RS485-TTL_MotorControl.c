@@ -35,7 +35,7 @@ Ping指令测试,测试总线上相应ID舵机是否就绪,广播指令只适用
 // Define constants for columns, rows and field of view
 #define COLUMNS 32
 #define ROWS 24
-// Define motor position ranges and angles for each sensor
+// Define Horizontal Motor position ranges and angles for each sensor
 // Middle Sensor Calibration Data
 #define MOTOR_POSITION_MIDDLE_MIN 1050   // Corresponds to column 31-32 (leftmost)
 #define MOTOR_POSITION_MIDDLE_CENTER 1400 // Corresponds to column 15-16 (center)
@@ -56,6 +56,14 @@ Ping指令测试,测试总线上相应ID舵机是否就绪,广播指令只适用
 #define MOTOR_POSITION_RIGHT_MAX 2590    // Rightmost position (1820 + 770)
 #define MOTOR_ANGLE_RIGHT_MIN 27.5f
 #define MOTOR_ANGLE_RIGHT_MAX 82.5f      // 27.5 + 55
+
+
+ // Vertical Motor parameters
+#define VERTICAL_MOTOR_POSITION_MIN 475    // Motor position corresponding to lowest angle
+#define VERTICAL_MOTOR_POSITION_MAX 1150   // Motor position corresponding to highest angle
+#define VERTICAL_MOTOR_POSITION_MIDDLE 800 // Motor middle position (home position)
+#define VERTICAL_MOTOR_ANGLE_MIN -17.5f //(-SENSOR_FOV_VERTICAL / 2) = 17.5 degrees
+#define VERTICAL_MOTOR_ANGLE_MAX 17.5f //(SENSOR_FOV_VERTICAL / 2)  = +17.5 degrees
 
 extern UART_HandleTypeDef huart2; // For console output
 extern UART_HandleTypeDef huart1; // For servo communication
@@ -497,28 +505,22 @@ float rotateToTargetColumn(uint8_t columnIndex, int targetDetected, int sensorNu
 
 float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
 
+
+	uint8_t invertedRowIndex = ROWS - 1 - rowIndex;
     const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
 
-    // Define motor parameters
-    const float MOTOR_MIN_ANGLE = -45.0f; // Minimum motor angle in degrees
-    const float MOTOR_MAX_ANGLE = 45.0f;  // Maximum motor angle in degrees
+    float MOTOR_MIN_ANGLE;
+    float MOTOR_MAX_ANGLE;
+    int MOTOR_POSITION_MIN;
+    int MOTOR_POSITION_MAX;
+    int MOTOR_POSITION_CENTER;
 
-    // Calculate motor position range corresponding to -45° to +45°
-    const int MOTOR_POSITION_MIN = 1536;  // Corresponds to -45°
-    const int MOTOR_POSITION_MAX = 2560;  // Corresponds to +45°
+    MOTOR_MIN_ANGLE = VERTICAL_MOTOR_ANGLE_MIN;
+    MOTOR_MAX_ANGLE = VERTICAL_MOTOR_ANGLE_MAX;
+    MOTOR_POSITION_MIN = VERTICAL_MOTOR_POSITION_MIN;
+    MOTOR_POSITION_MAX = VERTICAL_MOTOR_POSITION_MAX;
+    MOTOR_POSITION_CENTER = VERTICAL_MOTOR_POSITION_MIDDLE;
 
-    // Map row index to angle over the sensor's field of view
-    float angle = ((rowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
-
-    // Map angle to motor position
-    int position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN))
-                        / (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE) + MOTOR_POSITION_MIN);
-
-    // Ensure position is within valid range
-    if (position < MOTOR_POSITION_MIN)
-        position = MOTOR_POSITION_MIN;
-    else if (position > MOTOR_POSITION_MAX)
-        position = MOTOR_POSITION_MAX;
 
     // Move motor to position
     uint8_t motorID = Motor_ID_Vertical;   // Adjust motor ID as needed
@@ -527,22 +529,41 @@ float rotateToTargetRow(uint8_t rowIndex, int targetDetected){
 
     // Overwrite last servo mode, and make it respond to "Positional commands"
     // SMS_STS_MODE corresponds to register #33
+    // Overwrite last servo mode, and make it respond to "Positional commands"
     writeByte(motorID, 33, 0);
 
-    // Move the motor
+    float angle;
+    int position;
+
     if (targetDetected == 1) {
-        WritePosEx(motorID, position, speed, acceleration);
+        // Map column index to angle over the sensor's field of view
+        angle = ((invertedRowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
+
+        // Map angle to motor position
+        position = (int)(((angle - MOTOR_MIN_ANGLE) * (MOTOR_POSITION_MAX - MOTOR_POSITION_MIN))
+                            / (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE) + MOTOR_POSITION_MIN);
+
+        // Ensure position is within valid range
+        if (position < MOTOR_POSITION_MIN)
+            position = MOTOR_POSITION_MIN;
+        else if (position > MOTOR_POSITION_MAX)
+            position = MOTOR_POSITION_MAX;
+
     } else {
         // Return to center position when no target is detected
-    	angle = 0.0f;
-    	position = (MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2;
-        WritePosEx(motorID, position, speed, acceleration);
+        angle = (MOTOR_MIN_ANGLE + MOTOR_MAX_ANGLE) / 2.0f;
+        position = MOTOR_POSITION_CENTER;
     }
 
+    // Move the motor
+    WritePosEx(motorID, position, speed, acceleration);
+
     // Calculate delay based on movement distance
-    uint32_t movementTime = (uint32_t)(fabs(position - ((MOTOR_POSITION_MIN + MOTOR_POSITION_MAX) / 2))
-                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 2000); // Adjust as needed
+    // Note: At selected speed and acceleration parameters the 360° revolution takes around 2000ms
+    uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_CENTER)
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 500);
     HAL_Delay(movementTime);
+
 
     // Print debug information
     sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
