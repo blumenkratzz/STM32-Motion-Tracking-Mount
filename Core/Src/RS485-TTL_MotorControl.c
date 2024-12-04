@@ -28,8 +28,8 @@ Ping
 #include <math.h>
 
 // Define constants for sensor numbers
-#define SENSOR_LEFT 0
-#define SENSOR_MIDDLE 1
+#define SENSOR_LEFT 1
+#define SENSOR_MIDDLE 0
 #define SENSOR_RIGHT 2
 
 // Define constants for columns, rows and field of view
