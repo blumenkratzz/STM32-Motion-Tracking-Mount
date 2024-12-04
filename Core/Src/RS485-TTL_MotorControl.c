@@ -17,7 +17,7 @@
  *
  */
 /*
-Ping指令测试,测试总线上相应ID舵机是否就绪,广播指令只适用于总线只有一个舵机情况
+Ping
 */
 
 #include <stdio.h>
@@ -65,6 +65,7 @@ Ping指令测试,测试总线上相应ID舵机是否就绪,广播指令只适用
 #define VERTICAL_MOTOR_ANGLE_MIN -17.5f //(-SENSOR_FOV_VERTICAL / 2) = 17.5 degrees
 #define VERTICAL_MOTOR_ANGLE_MAX 17.5f //(SENSOR_FOV_VERTICAL / 2)  = +17.5 degrees
 
+ADC_HandleTypeDef hadc1;
 extern UART_HandleTypeDef huart2; // For console output
 extern UART_HandleTypeDef huart1; // For servo communication
 int Motor_ID_Horizontal = -1;
@@ -72,15 +73,44 @@ int Motor_ID_Vertical = -1;
 
 char buffer[255]; // Buffer to hold the string to transmit
 
+
+void MX_ADC1_Init(void) {
+    __HAL_RCC_ADC1_CLK_ENABLE();
+
+    hadc1.Instance = ADC1;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = DISABLE; // Single channel
+    hadc1.Init.ContinuousConvMode = ENABLE; // Continuous conversion
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = 1;
+
+    if (HAL_ADC_Init(&hadc1) != HAL_OK) {
+        // Handle error
+    }
+
+    // Configure ADC channel
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.Channel = ADC_CHANNEL_0; // Assuming PA0 is connected to the potentiometer
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+        // Handle error
+    }
+}
+
+
 void setup()
 {
   Uart_Init(1000000);
-
+  MX_ADC1_Init();
   //Uart_Init(115200);
   HAL_Delay(1000);
-  //unLockEprom(1);//打开EPROM保存功能
+  //unLockEprom(1);
   //writeByte(1, SMS_STS_ID, 2);//ID
-  //LockEprom(2);//关闭EPROM保存功能
+  //LockEprom(2);
 
 }
 // Function to read a line from UART
@@ -413,6 +443,24 @@ WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, ac
   //displayRegisterData();
   HAL_Delay(2000);
 }
+
+uint16_t MapADCToSpeed(uint16_t adcValue) {
+    // Scale ADC value (0-4095) to motor speed range (e.g., 500-2500)
+    uint16_t minSpeed = 500;
+    uint16_t maxSpeed = 2500;
+    return (adcValue * (maxSpeed - minSpeed)) / 4095 + minSpeed;
+}
+
+
+uint16_t ReadPotentiometer(void) {
+    HAL_ADC_Start(&hadc1); // Start ADC conversion
+    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
+        return HAL_ADC_GetValue(&hadc1); // Get the ADC value
+    }
+    return 0; // Return 0 if conversion fails
+}
+
+
 float rotateToTargetColumn(uint8_t columnIndex, int *targetDetected, int sensorNumber){
 	//The sensor datasheet indicates that Column 1 starts from the right, and Column 32 ends on the left.
 	//This inverts the column index so that invertedColumnIndex ranges from 31 to 0
@@ -507,7 +555,7 @@ float rotateToTargetRow(uint8_t rowIndex, int *targetDetected){
 
 
 	uint8_t invertedRowIndex = ROWS - 1 - rowIndex;
-    const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
+    //const float SENSOR_FOV = 35.0f; // Sensor vertical field of view in degrees
 
     float MOTOR_MIN_ANGLE;
     float MOTOR_MAX_ANGLE;
