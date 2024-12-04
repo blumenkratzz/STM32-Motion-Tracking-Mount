@@ -65,7 +65,7 @@ Ping
 #define VERTICAL_MOTOR_ANGLE_MIN -17.5f //(-SENSOR_FOV_VERTICAL / 2) = 17.5 degrees
 #define VERTICAL_MOTOR_ANGLE_MAX 17.5f //(SENSOR_FOV_VERTICAL / 2)  = +17.5 degrees
 
-ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc1;
 extern UART_HandleTypeDef huart2; // For console output
 extern UART_HandleTypeDef huart1; // For servo communication
 int Motor_ID_Horizontal = -1;
@@ -105,7 +105,14 @@ void MX_ADC1_Init(void) {
 void setup()
 {
   Uart_Init(1000000);
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_0; // PA0
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG; // Analog mode
+  GPIO_InitStruct.Pull = GPIO_NOPULL; // No pull-up or pull-down resistors
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   MX_ADC1_Init();
+
   //Uart_Init(115200);
   HAL_Delay(1000);
   //unLockEprom(1);
@@ -444,11 +451,9 @@ WriteSpe(ID, 2000, 30); // Servo (ID1) rotates at max speed V=2000 steps/sec, ac
   HAL_Delay(2000);
 }
 
-uint16_t MapADCToSpeed(uint16_t adcValue) {
-    // Scale ADC value (0-4095) to motor speed range (e.g., 500-2500)
-    uint16_t minSpeed = 500;
-    uint16_t maxSpeed = 2500;
-    return (adcValue * (maxSpeed - minSpeed)) / 4095 + minSpeed;
+uint32_t MapDelay(uint16_t adc_value) {
+    // Scale ADC value to range 0 - 3000 ms
+    return (uint32_t)((adc_value / 4095.0) * 3000.0);
 }
 
 
@@ -609,7 +614,7 @@ float rotateToTargetRow(uint8_t rowIndex, int zoneInfo){
     // Calculate delay based on movement distance
     // Note: At selected speed and acceleration parameters the 360° revolution takes around 2000ms
     uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_CENTER)
-                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 500);
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 250);
     HAL_Delay(movementTime);
 
 
