@@ -509,7 +509,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int zoneInfo, int sensorNumber){
 
     uint8_t motorID = Motor_ID_Horizontal;   // Adjust motor ID as needed
     uint16_t speed = 2250; // Set desired speed
-    uint8_t acceleration = 40; // Set desired acceleration
+    uint8_t acceleration = 25; // Set desired acceleration
 
     // Overwrite last servo mode, and make it respond to "Positional commands"
     writeByte(motorID, 33, 0);
@@ -543,8 +543,8 @@ float rotateToTargetColumn(uint8_t columnIndex, int zoneInfo, int sensorNumber){
     // Calculate delay based on movement distance
     // Note: At selected speed and acceleration parameters the 360° revolution takes around 2000ms
     uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_CENTER)
-                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 800);
-    HAL_Delay(movementTime);
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 400);
+    //HAL_Delay(movementTime);
 
     // Print debug information
     sprintf(buffer, "Sensor %d: Rotating to column %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
@@ -578,7 +578,7 @@ float rotateToTargetRow(uint8_t rowIndex, int zoneInfo){
     // Move motor to position
     uint8_t motorID = Motor_ID_Vertical;   // Adjust motor ID as needed
     uint16_t speed = 2250; // Set desired speed
-    uint8_t acceleration = 40; // Set desired acceleration
+    uint8_t acceleration = 25; // Set desired acceleration
 
     // Overwrite last servo mode, and make it respond to "Positional commands"
     // SMS_STS_MODE corresponds to register #33
@@ -613,9 +613,10 @@ float rotateToTargetRow(uint8_t rowIndex, int zoneInfo){
 
     // Calculate delay based on movement distance
     // Note: At selected speed and acceleration parameters the 360° revolution takes around 2000ms
+
     uint32_t movementTime = (uint32_t)(fabs(position - MOTOR_POSITION_CENTER)
-                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 250);
-    HAL_Delay(movementTime);
+                            / (float)(MOTOR_POSITION_MAX - MOTOR_POSITION_MIN) * 200);
+    //HAL_Delay(movementTime);
 
 
     // Print debug information
