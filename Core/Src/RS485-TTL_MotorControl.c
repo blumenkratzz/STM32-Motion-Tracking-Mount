@@ -461,7 +461,7 @@ uint16_t ReadPotentiometer(void) {
 }
 
 
-float rotateToTargetColumn(uint8_t columnIndex, int *targetDetected, int sensorNumber){
+float rotateToTargetColumn(uint8_t columnIndex, int zoneInfo, int sensorNumber){
 	//The sensor datasheet indicates that Column 1 starts from the right, and Column 32 ends on the left.
 	//This inverts the column index so that invertedColumnIndex ranges from 31 to 0
 	uint8_t invertedColumnIndex = COLUMNS - 1 - columnIndex;
@@ -512,7 +512,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int *targetDetected, int sensorN
     float angle;
     int position;
 
-    if (*targetDetected == 1) {
+    if (zoneInfo != -1) {
         // Map column index to angle over the sensor's field of view
         angle = ((invertedColumnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 
@@ -544,14 +544,14 @@ float rotateToTargetColumn(uint8_t columnIndex, int *targetDetected, int sensorN
     // Print debug information
     sprintf(buffer, "Sensor %d: Rotating to column %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
 ",
-            sensorNumber, columnIndex, angle, position, movementTime, *targetDetected);
+            sensorNumber, columnIndex, angle, position, movementTime, zoneInfo);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     return angle;
 }
 
 
-float rotateToTargetRow(uint8_t rowIndex, int *targetDetected){
+float rotateToTargetRow(uint8_t rowIndex, int zoneInfo){
 
 
 	uint8_t invertedRowIndex = ROWS - 1 - rowIndex;
@@ -583,7 +583,7 @@ float rotateToTargetRow(uint8_t rowIndex, int *targetDetected){
     float angle;
     int position;
 
-    if (*targetDetected == 1) {
+    if (zoneInfo != -1) {
         // Map column index to angle over the sensor's field of view
         angle = ((invertedRowIndex / (float)(ROWS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 
@@ -616,7 +616,7 @@ float rotateToTargetRow(uint8_t rowIndex, int *targetDetected){
     // Print debug information
     sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
 ",
-            rowIndex, angle, position, movementTime, *targetDetected);
+            rowIndex, angle, position, movementTime, zoneInfo);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     return angle;
