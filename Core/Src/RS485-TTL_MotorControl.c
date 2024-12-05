@@ -44,7 +44,8 @@ Ping
 #define MOTOR_ANGLE_MIDDLE_MAX 27.5f
 
 // Left Sensor Calibration Data
-#define MOTOR_POSITION_LEFT_MIN 280      // Leftmost position (1050 - 770)
+#define MOTOR_POSITION_LEFT_MIN 450      // Leftmost position (1050 - 770)
+//recalculated after recalibration and mount redesign(relative angle changed from 45° to 57.5°)
 #define MOTOR_POSITION_LEFT_CENTER 665   // Center position
 #define MOTOR_POSITION_LEFT_MAX 1050     // Edge of middle sensor's leftmost position
 #define MOTOR_ANGLE_LEFT_MIN -82.5f      // -27.5 - 55
@@ -53,7 +54,8 @@ Ping
 // Right Sensor Calibration Data
 #define MOTOR_POSITION_RIGHT_MIN 1820    // Edge of middle sensor's rightmost position
 #define MOTOR_POSITION_RIGHT_CENTER 2205 // Center position
-#define MOTOR_POSITION_RIGHT_MAX 2590    // Rightmost position (1820 + 770)
+#define MOTOR_POSITION_RIGHT_MAX 2350    // Rightmost position (1820 + 770),
+//recalculated after recalibration and mount redesign(relative angle changed from 45° to 57.5°)
 #define MOTOR_ANGLE_RIGHT_MIN 27.5f
 #define MOTOR_ANGLE_RIGHT_MAX 82.5f      // 27.5 + 55
 
@@ -102,8 +104,13 @@ void MX_ADC1_Init(void) {
 }
 
 
-void setup()
+void setupMotorControl()
 {
+
+  /*	 *USART1 GPIO Configuration
+		    PA9     ------> USART1_TX
+		    PA10    ------> USART1_RX
+  */
   Uart_Init(1000000);
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -199,7 +206,7 @@ Motor %d moved to position %d.
         HAL_Delay(1000); // Adjust delay as needed
     }
 }
-void loop()
+void checkServoConnection()
 {
 
   // No longer need to scan the assigned motorID, after writing/hardcoding new ID to EEPROM
