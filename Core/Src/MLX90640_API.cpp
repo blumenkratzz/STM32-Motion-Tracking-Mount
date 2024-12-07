@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: MLX90640_API.cpp
  * Description:
  *   Implements API functions for interfacing with MLX90640 sensors using I2C.

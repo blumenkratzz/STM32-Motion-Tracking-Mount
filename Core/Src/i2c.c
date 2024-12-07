@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: i2c.c
  * Description:
  *   This file provides I2C configuration and initialization routines for 

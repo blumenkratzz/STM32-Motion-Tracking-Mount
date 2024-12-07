@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: i2c.h
  * Description:
  *   Header file for I2C configuration and initialization routines used

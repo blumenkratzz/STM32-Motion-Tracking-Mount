@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: MLX90640_I2C_Driver.h
  * Description:
  *   Header file for MLX90640 sensor interface functions.

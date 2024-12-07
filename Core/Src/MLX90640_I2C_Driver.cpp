@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: MLX90640_I2C_Driver.cpp
  * Description:
  *   Implements high-level functions for interfacing with MLX90640 sensors using I2C.

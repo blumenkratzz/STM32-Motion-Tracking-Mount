@@ -1,5 +1,5 @@
 /*
- * Authors: Aleksandr Safronov, Quoc Trung Trun
+ * Authors: Aleksandr Safronov, Quoc Trung Tran
  * File: RS485-TTL_MotorControl.c
  * Description:
  *   This file implements motor control routines for the RS485-TTL interface,
