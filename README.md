@@ -1,8 +1,3 @@
----
-cssclass: academia_pdf
----
-
-
 # **Motion Tracking Camera Mount - User Manual**
 
 
