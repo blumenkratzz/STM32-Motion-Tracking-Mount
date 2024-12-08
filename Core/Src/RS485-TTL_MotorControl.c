@@ -16,10 +16,6 @@
  *   Last Modified: 2024-12-05
  *
  */
-/*
-Ping
-*/
-
 #include <stdio.h>
 #include "stm32f4xx.h"
 #include "SCServo.h"
@@ -137,11 +133,8 @@ void calibrateMotors(void) {
     uint8_t acceleration = 40;
 
     // Display instructions
-    sprintf(buffer, "
-Entering Calibration Mode.
-");
-    sprintf(buffer + strlen(buffer), "Enter 'h' to calibrate horizontal motor, 'v' for vertical motor, or 'q' to quit.
-");
+    sprintf(buffer, "\r\nEntering Calibration Mode.\r\n");
+    sprintf(buffer + strlen(buffer), "Enter 'h' to calibrate horizontal motor, 'v' for vertical motor, or 'q' to quit.\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     while (1) {
@@ -157,22 +150,17 @@ Entering Calibration Mode.
             motorID = Motor_ID_Vertical;
         } else if (inputBuffer[0] == 'q') {
             // Exit calibration mode
-            sprintf(buffer, "
-Exiting Calibration Mode.
-");
+            sprintf(buffer, "\r\nExiting Calibration Mode.\r\n");
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             break;
         } else {
-            sprintf(buffer, "
-Invalid selection. Please try again.
-");
+            sprintf(buffer, "\r\nInvalid selection. Please try again.\r\n");
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             continue;
         }
 
         // Prompt for desired position
-        sprintf(buffer, "
-Enter desired position (0 to 4095): ");
+        sprintf(buffer, "\r\nEnter desired position (0 to 4095): ");
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         UART_ReadLine(inputBuffer, sizeof(inputBuffer));
@@ -182,9 +170,7 @@ Enter desired position (0 to 4095): ");
 
         // Validate position
         if (position < 0 || position > 4095) {
-            sprintf(buffer, "
-Invalid position. Please enter a value between 0 and 4095.
-");
+            sprintf(buffer, "\r\nInvalid position. Please enter a value between 0 and 4095.\r\n");
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             continue;
         }
@@ -197,9 +183,7 @@ Invalid position. Please enter a value between 0 and 4095.
         WritePosEx(motorID, position, speed, acceleration);
 
         // Provide feedback
-        sprintf(buffer, "
-Motor %d moved to position %d.
-", motorID, position);
+        sprintf(buffer, "\r\nMotor %d moved to position %d.\r\n", motorID, position);
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         // Wait for movement to complete
@@ -217,22 +201,16 @@ void checkServoConnection()
   char buffer[100]; // Buffer to hold the string to transmit
   if((Motor_ID_Horizontal!=-1) && (Motor_ID_Vertical!=-1)){
 	  // Format the message with ID and transmit
-	sprintf(buffer, "
-Servo ID at X: %d, Servo ID at Y: %d
-", Motor_ID_Horizontal, Motor_ID_Vertical);
+	sprintf(buffer, "\r\nServo ID at X: %d, Servo ID at Y: %d\r\n", Motor_ID_Horizontal, Motor_ID_Vertical);
 	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-//    printf("Servo ID:%d
-", ID);
+//    printf("Servo ID:%d\n", ID);
     //HAL_Delay(100);
   }
 
   else{
-	sprintf(buffer, "
-Ping servo ID error! Motor ID at X: %d, Motor ID at Y: %d
-", Motor_ID_Horizontal, Motor_ID_Vertical);
+	sprintf(buffer, "\r\nPing servo ID error! Motor ID at X: %d, Motor ID at Y: %d\r\n", Motor_ID_Horizontal, Motor_ID_Vertical);
 	HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-//    printf("Ping servo ID error!
-");
+//    printf("Ping servo ID error!\n");
     //HAL_Delay(100);
   }
 
@@ -247,33 +225,28 @@ void scanMotors() {
         if (result != -1) {
             // Motor with ID 'id' is present
             motorIDs[motorCount++] = id;
-            sprintf(buffer, "Found motor with ID: %d
-", id);
+            sprintf(buffer, "Found motor with ID: %d\r\n", id);
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
         }
         HAL_Delay(10); // Small delay between pings
     }
 
     if (motorCount == 0) {
-        sprintf(buffer, "No motors found on the bus.
-");
+        sprintf(buffer, "No motors found on the bus.\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     } else {
-        sprintf(buffer, "Total motors found: %d
-", motorCount);
+        sprintf(buffer, "Total motors found: %d\r\n", motorCount);
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         // Now assign motors to variables
         if (motorCount >= 1) {
             Motor_ID_Horizontal = motorIDs[0];
-            sprintf(buffer, "Assigned Motor_ID_Horizontal = %d
-", Motor_ID_Horizontal);
+            sprintf(buffer, "Assigned Motor_ID_Horizontal = %d\r\n", Motor_ID_Horizontal);
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
         }
         if (motorCount >= 2) {
             Motor_ID_Vertical = motorIDs[1];
-            sprintf(buffer, "Assigned Motor_ID_Vertical = %d
-", Motor_ID_Vertical);
+            sprintf(buffer, "Assigned Motor_ID_Vertical = %d\r\n", Motor_ID_Vertical);
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
         }
     }
@@ -302,38 +275,30 @@ void displayRegisterData(void)
     Current = ReadCurrent(-1);
 
     // Transmit values using HAL_UART_Transmit
-    sprintf(buffer, "Pos: %d
-", Pos);
+    sprintf(buffer, "Pos: %d\r\n", Pos);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Speed: %d
-", Speed);
+    sprintf(buffer, "Speed: %d\r\n", Speed);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Load: %d
-", Load);
+    sprintf(buffer, "Load: %d\r\n", Load);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Voltage: %d
-", Voltage);
+    sprintf(buffer, "Voltage: %d\r\n", Voltage);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Temper: %d
-", Temper);
+    sprintf(buffer, "Temper: %d\r\n", Temper);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Move: %d
-", Move);
+    sprintf(buffer, "Move: %d\r\n", Move);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Current: %d
-", Current);
+    sprintf(buffer, "Current: %d\r\n", Current);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "FeedBack err
-");
+    sprintf(buffer, "FeedBack err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(2000);
   }
@@ -341,13 +306,11 @@ void displayRegisterData(void)
   // Read and transmit servo position
   Pos = ReadPos(1);
   if(Pos != -1){
-    sprintf(buffer, "Servo position: %d
-", Pos);
+    sprintf(buffer, "Servo position: %d\r\n", Pos);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read position err
-");
+    sprintf(buffer, "read position err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -355,13 +318,11 @@ void displayRegisterData(void)
   // Read and transmit servo voltage
   Voltage = ReadVoltage(1);
   if(Voltage != -1){
-    sprintf(buffer, "Servo Voltage: %d
-", Voltage);
+    sprintf(buffer, "Servo Voltage: %d\r\n", Voltage);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read Voltage err
-");
+    sprintf(buffer, "read Voltage err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -369,13 +330,11 @@ void displayRegisterData(void)
   // Read and transmit servo temperature
   Temper = ReadTemper(1);
   if(Temper != -1){
-    sprintf(buffer, "Servo temperature: %d
-", Temper);
+    sprintf(buffer, "Servo temperature: %d\r\n", Temper);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read temperature err
-");
+    sprintf(buffer, "read temperature err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -383,13 +342,11 @@ void displayRegisterData(void)
   // Read and transmit servo speed
   Speed = ReadSpeed(1);
   if(Speed != -1){
-    sprintf(buffer, "Servo Speed: %d
-", Speed);
+    sprintf(buffer, "Servo Speed: %d\r\n", Speed);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read Speed err
-");
+    sprintf(buffer, "read Speed err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -397,13 +354,11 @@ void displayRegisterData(void)
   // Read and transmit servo load
   Load = ReadLoad(1);
   if(Load != -1){
-    sprintf(buffer, "Servo Load: %d
-", Load);
+    sprintf(buffer, "Servo Load: %d\r\n", Load);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read Load err
-");
+    sprintf(buffer, "read Load err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -411,13 +366,11 @@ void displayRegisterData(void)
   // Read and transmit servo current
   Current = ReadCurrent(1);
   if(Current != -1){
-    sprintf(buffer, "Servo Current: %d
-", Current);
+    sprintf(buffer, "Servo Current: %d\r\n", Current);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read Current err
-");
+    sprintf(buffer, "read Current err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
@@ -425,20 +378,17 @@ void displayRegisterData(void)
   // Read and transmit servo move status
   Move = ReadMove(1);
   if(Move != -1){
-    sprintf(buffer, "Servo Move: %d
-", Move);
+    sprintf(buffer, "Servo Move: %d\r\n", Move);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(10);
   } else {
-    sprintf(buffer, "read Move err
-");
+    sprintf(buffer, "read Move err\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     HAL_Delay(500);
   }
 
   // Transmit new line
-  sprintf(buffer, "
-");
+  sprintf(buffer, "\r\n");
   HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
@@ -554,8 +504,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int zoneInfo, int sensorNumber){
     //HAL_Delay(movementTime);
 
     // Print debug information
-    sprintf(buffer, "Sensor %d: Rotating to column %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
-",
+    sprintf(buffer, "Sensor %d: Rotating to column %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d\r\n",
             sensorNumber, columnIndex, angle, position, movementTime, zoneInfo);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
@@ -627,8 +576,7 @@ float rotateToTargetRow(uint8_t rowIndex, int zoneInfo){
 
 
     // Print debug information
-    sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d
-",
+    sprintf(buffer, "Rotating to row %d, angle %.2f degrees, motor position %d, movement time %lu, targetDetected state %d\r\n",
             rowIndex, angle, position, movementTime, zoneInfo);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
