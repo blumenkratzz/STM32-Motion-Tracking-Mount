@@ -27,6 +27,7 @@
 #define SENSOR_LEFT 1
 #define SENSOR_MIDDLE 0
 #define SENSOR_RIGHT 2
+#define RETURN_HOME -1
 
 // Define constants for columns, rows and field of view
 #define COLUMNS 32
@@ -474,7 +475,7 @@ float rotateToTargetColumn(uint8_t columnIndex, int zoneInfo, int sensorNumber){
     float angle;
     int position;
 
-    if (zoneInfo != -1) {
+    if (sensorNumber != RETURN_HOME) {
         // Map column index to angle over the sensor's field of view
         angle = ((invertedColumnIndex / (float)(COLUMNS - 1)) * (MOTOR_MAX_ANGLE - MOTOR_MIN_ANGLE)) + MOTOR_MIN_ANGLE;
 

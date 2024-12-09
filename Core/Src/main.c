@@ -61,6 +61,7 @@
 #define SENSOR_LEFT 1
 #define SENSOR_MIDDLE 0
 #define SENSOR_RIGHT 2
+#define RETURN_HOME -1
 
 //calibration for average count thingy
 #define SENSOR_ARRAY_SIZE 768
@@ -73,8 +74,12 @@
 
 // Define the number of frames to combine for temporal analysis (inter-frame)
 #define NUM_FRAMES_TO_COMBINE 4
-#define MINIMUM_TARGET_BLOB_SIZE 4
+#define MINIMUM_TARGET_BLOB_SIZE 8
 #define NUM_SENSORS 3
+
+uint32_t lastDetectedTime = 0;
+uint8_t stableTargetDetected = 0; // This is the final state used for actual decisions
+#define LOST_TARGET_TIMEOUT_MS 2000 // 2 seconds
 
 I2C_HandleTypeDef *hi2c;
 UART_HandleTypeDef huart2;
@@ -272,6 +277,16 @@ int retriever(I2C_HandleTypeDef *hi2c, uint16_t *eeMLX90640, paramsMLX90640 *mlx
 }
 
 
+float getPixelWeight(float temperature)
+{
+    float centerTemp = 26.0f; // Center of the Gaussian
+    float sigma = 2.0f;       // Standard deviation
+
+    // Calculate Gaussian weight
+    float weight = exp(-0.5 * pow((temperature - centerTemp) / sigma, 2));
+
+    return weight;
+}
 
 float overallAvg(float mlx90640To_2[SENSOR_ARRAY_SIZE])
 {
@@ -299,7 +314,8 @@ int avgBySector(float mlx90640To_2[SENSOR_ARRAY_SIZE], int* highestRowGroupStart
     *highestColGroupStart = -1;
     *targetDetected = 0; // Initialize targetDetected
 
-    int maxRowStart = ROWS - ROW_CHUNK; // Since we're sliding one row at a time
+    // Sliding window for rows
+    int maxRowStart = ROWS - ROW_CHUNK; // Max row index to start the chunk
 
     for (int r = 0; r <= maxRowStart; r++)
     {
@@ -322,7 +338,7 @@ int avgBySector(float mlx90640To_2[SENSOR_ARRAY_SIZE], int* highestRowGroupStart
         }
 
         // Check if this group meets the headThresholdPixelCount
-        if ((pixelCountInGroup >= headThresholdPixelCount) && (zoneInfo!=-1))
+        if ((pixelCountInGroup >= headThresholdPixelCount) && (zoneInfo != -1))
         {
             *targetDetected = 1;
             *highestRowGroupStart = r + 1; // Adjusting for 1-based indexing
@@ -335,53 +351,51 @@ int avgBySector(float mlx90640To_2[SENSOR_ARRAY_SIZE], int* highestRowGroupStart
         }
     }
 
-    // If no group meets the threshold, targetDetected remains 0
+    // Column sliding window logic
+    int maxColStart = COLUMNS - COLUMN_CHUNK; // Max column index to start the chunk
+    float highestDetectionMetric = -1.0;
 
-    // Column calculation logic remains intact
-    float highestColGroupAverage = -1.0;
-
-    // Calculate groups of columns average
-    for (int c = 0; c < COLUMNS; c += COLUMN_CHUNK)
+    for (int c = 0; c <= maxColStart; c++)
     {
-        float groupColSum = 0.0;
-        int colsToSum = (c + COLUMN_CHUNK <= COLUMNS) ? COLUMN_CHUNK : (COLUMNS - c);
-        for (int i = 0; i < colsToSum; i++)
+        float weightedSum = 0.0;
+        int blobSize = 0;
+
+        // Process each column in the group
+        for (int i = 0; i < COLUMN_CHUNK; i++)
         {
+            int colIndex = c + i;
             for (int r = 0; r < ROWS; r++)
             {
-                groupColSum += mlx90640To_2[r * COLUMNS + (c + i)];
+                int index = r * COLUMNS + colIndex;
+                float temp = mlx90640To_2[index];
+
+                if (temp >= TARGET_MIN_TEMP)
+                {
+                    // Add to weighted sum using the pixel's weight
+                    float weight = getPixelWeight(temp);
+                    weightedSum += weight * temp;
+                    blobSize++;
+                }
             }
         }
-        float groupColAverage = groupColSum / (colsToSum * ROWS);
 
-        // Optional: Print column group average
-#ifdef SENSOR_DEBUG
-        sprintf(MLX90640_Test_Buffer, "Column Group starting at Column %d Average: %.2f\n\r", c + 1, groupColAverage);
-        HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
-#endif
-        // Check if this column group has the highest average
-        if (groupColAverage > highestColGroupAverage)
+        // Calculate detection metric (combined weighted sum and blob size)
+        float detectionMetric = weightedSum * blobSize;
+
+        // Check if this column group has the highest metric
+        if (detectionMetric > highestDetectionMetric)
         {
-            highestColGroupAverage = groupColAverage;
-            *highestColGroupStart = c + 1;
+            highestDetectionMetric = detectionMetric;
+            *highestColGroupStart = c + 1; // Adjusting for 1-based indexing
         }
     }
 
-    // Return the starting column of the highest average column group
+    // Return the starting column of the highest detection metric column group
     return *highestColGroupStart;
 }
 
 
-float getPixelWeight(float temperature)
-{
-    float centerTemp = 24.0f; // Center of the Gaussian
-    float sigma = 2.0f;       // Standard deviation
 
-    // Calculate Gaussian weight
-    float weight = exp(-0.5 * pow((temperature - centerTemp) / sigma, 2));
-
-    return weight;
-}
 
 void connectedComponents(int binaryMask[ROWS][COLUMNS], int labels[ROWS][COLUMNS], int *numComponents)
 {
@@ -759,7 +773,7 @@ int main()
 		uint32_t masterTrackingDelay = 0;
 
 		// Initialize other variables as needed
-		for (int i = 2; i < NUM_SENSORS; i++)
+		for (int i = 1; i < NUM_SENSORS; i++)
 		{
 		    sensors[i].targetDetected = 0;
 		    sensors[i].highestRowGroupStart = 0;
@@ -775,7 +789,7 @@ int main()
 	    sprintf(MLX90640_Test_Buffer, "\n\nstart\r\n");
 	    HAL_UART_Transmit(&huart2, (uint8_t *)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
-		for (int i = 2; i < NUM_SENSORS; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
+		for (int i = 1; i < NUM_SENSORS; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
 		{
 #ifdef SENSOR_DEBUG
 			sprintf(MLX90640_Test_Buffer, "\r\nSENSOR_DEBUG info for sensor %.2d\r\n", i);
@@ -823,8 +837,9 @@ int main()
 		// Or you can see with increasing a, that b still takes over due to closer clustering (but up to a point)
 		int max_index = 0;
 		float max_centroid_weighted_sum = 0;
+		int localTargetDetected = 0;
 		float detectionMetric = 0;
-		for (int i = 2; i < NUM_SENSORS; i++)
+		for (int i = 1; i < NUM_SENSORS; i++)
 		{
 		    /*if (sensors[i].centroidWeightedSum > max_centroid_weighted_sum)
 		    {
@@ -894,11 +909,42 @@ int main()
 
 			    sensors[SENSOR_LEFT].highestColumnIndex = avgBySector(sensors[SENSOR_LEFT].mlx90640To,
 		    	        &sensors[SENSOR_LEFT].highestRowGroupStart, &sensors[SENSOR_LEFT].highestColGroupStart, &sensors[SENSOR_LEFT].targetDetected, headThresholdPixelCount, targetZone);
-				// Apply Master Tracking Delay
+
+			    // After calling getZoneInfo(...), avgBySector(...)
+			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+			    localTargetDetected = sensors[max_index].targetDetected;
+
+			    if (localTargetDetected == 1)
+			    {
+			        // Target found now, reset timer and ensure stableTargetDetected = 1
+			        lastDetectedTime = HAL_GetTick();
+			        stableTargetDetected = 1;
+			    }
+			    else
+			    {
+			        // Target not found this frame
+			        uint32_t currentTime = HAL_GetTick();
+			        if ((currentTime - lastDetectedTime) >= LOST_TARGET_TIMEOUT_MS)
+			        {
+			            // More than 3 seconds have passed without detecting target
+			            stableTargetDetected = 0;
+			        }
+			            // Less than 3 seconds, keep stableTargetDetected = 1
+			    }
+
+			    // Apply Master Tracking Delay
 				HAL_Delay(masterTrackingDelay);
 
+				if (stableTargetDetected == 1)
+				{
+				    // Proceed with rotateToTargetRow/Column
 			    rotateToTargetColumn(sensors[SENSOR_LEFT].highestColGroupStart, targetZone, SENSOR_LEFT);
 			    rotateToTargetRow(sensors[SENSOR_LEFT].highestRowGroupStart, targetZone);
+				}
+				else{
+			    	rotateToTargetColumn(sensors[SENSOR_LEFT].highestColGroupStart, targetZone, RETURN_HOME);
+				    rotateToTargetRow(sensors[SENSOR_LEFT].highestRowGroupStart, RETURN_HOME);
+				}
 #ifdef SENSOR_DEBUG
 			    printer(sensors[SENSOR_LEFT].hi2c, sensors[SENSOR_LEFT].eeMLX90640, &sensors[SENSOR_LEFT].mlx90640,sensors[SENSOR_LEFT].mlx90640To, sensors[SENSOR_LEFT].frame, &sensors[SENSOR_LEFT].highestRowGroupStart, &sensors[SENSOR_LEFT].highestColGroupStart);
 #endif
@@ -912,11 +958,41 @@ int main()
 			    HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 		    	sensors[SENSOR_MIDDLE].highestColumnIndex = avgBySector(sensors[SENSOR_MIDDLE].mlx90640To,
 		    	        &sensors[SENSOR_MIDDLE].highestRowGroupStart, &sensors[SENSOR_MIDDLE].highestColGroupStart, &sensors[SENSOR_MIDDLE].targetDetected, headThresholdPixelCount, targetZone);
-				// Apply Master Tracking Delay
+
+			    // After calling getZoneInfo(...), avgBySector(...)
+			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+			    localTargetDetected = sensors[max_index].targetDetected;
+
+			    if (localTargetDetected == 1)
+			    {
+			        // Target found now, reset timer and ensure stableTargetDetected = 1
+			        lastDetectedTime = HAL_GetTick();
+			        stableTargetDetected = 1;
+			    }
+			    else
+			    {
+			        // Target not found this frame
+			        uint32_t currentTime = HAL_GetTick();
+			        if ((currentTime - lastDetectedTime) >= LOST_TARGET_TIMEOUT_MS)
+			        {
+			            // More than 3 seconds have passed without detecting target
+			            stableTargetDetected = 0;
+			        }
+			            // Less than 3 seconds, keep stableTargetDetected = 1
+			    }
+		    	// Apply Master Tracking Delay
 				HAL_Delay(masterTrackingDelay);
 
+				if (stableTargetDetected == 1)
+				{
+				    // Proceed with rotateToTargetRow/Column
 		    	rotateToTargetColumn(sensors[SENSOR_MIDDLE].highestColGroupStart, targetZone, SENSOR_MIDDLE);
 			    rotateToTargetRow(sensors[SENSOR_MIDDLE].highestRowGroupStart, targetZone);
+				}
+				else{
+			    	rotateToTargetColumn(sensors[SENSOR_MIDDLE].highestColGroupStart, targetZone, RETURN_HOME);
+				    rotateToTargetRow(sensors[SENSOR_MIDDLE].highestRowGroupStart, RETURN_HOME);
+				}
 #ifdef SENSOR_DEBUG
 		        printer(sensors[SENSOR_MIDDLE].hi2c, sensors[SENSOR_MIDDLE].eeMLX90640, &sensors[SENSOR_MIDDLE].mlx90640,sensors[SENSOR_MIDDLE].mlx90640To, sensors[SENSOR_MIDDLE].frame, &sensors[SENSOR_MIDDLE].highestRowGroupStart, &sensors[SENSOR_MIDDLE].highestColGroupStart);
 #endif
@@ -931,11 +1007,41 @@ int main()
 
 		    	sensors[SENSOR_RIGHT].highestColumnIndex = avgBySector(sensors[SENSOR_RIGHT].mlx90640To,
 		    	        &sensors[SENSOR_RIGHT].highestRowGroupStart, &sensors[SENSOR_RIGHT].highestColGroupStart, &sensors[SENSOR_RIGHT].targetDetected, headThresholdPixelCount, targetZone);
-				// Apply Master Tracking Delay
+
+			    // After calling getZoneInfo(...), avgBySector(...)
+			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+			    localTargetDetected = sensors[max_index].targetDetected;
+
+			    if (localTargetDetected == 1)
+			    {
+			        // Target found now, reset timer and ensure stableTargetDetected = 1
+			        lastDetectedTime = HAL_GetTick();
+			        stableTargetDetected = 1;
+			    }
+			    else
+			    {
+			        // Target not found this frame
+			        uint32_t currentTime = HAL_GetTick();
+			        if ((currentTime - lastDetectedTime) >= LOST_TARGET_TIMEOUT_MS)
+			        {
+			            // More than 3 seconds have passed without detecting target
+			            stableTargetDetected = 0;
+			        }
+			            // Less than 3 seconds, keep stableTargetDetected = 1
+			    }
+		    	// Apply Master Tracking Delay
 				HAL_Delay(masterTrackingDelay);
 
+				if (stableTargetDetected == 1)
+				{
+				    // Proceed with rotateToTargetRow/Column
 				rotateToTargetColumn(sensors[SENSOR_RIGHT].highestColGroupStart, targetZone, SENSOR_RIGHT);
 			    rotateToTargetRow(sensors[SENSOR_RIGHT].highestRowGroupStart, targetZone);
+				}
+				else{
+			    	rotateToTargetColumn(sensors[SENSOR_RIGHT].highestColGroupStart, targetZone, RETURN_HOME);
+				    rotateToTargetRow(sensors[SENSOR_RIGHT].highestRowGroupStart, RETURN_HOME);
+				}
 #ifdef SENSOR_DEBUG
 			    printer(sensors[SENSOR_RIGHT].hi2c, sensors[SENSOR_RIGHT].eeMLX90640, &sensors[SENSOR_RIGHT].mlx90640,sensors[SENSOR_RIGHT].mlx90640To, sensors[SENSOR_RIGHT].frame, &sensors[SENSOR_RIGHT].highestRowGroupStart, &sensors[SENSOR_RIGHT].highestColGroupStart);
 #endif
