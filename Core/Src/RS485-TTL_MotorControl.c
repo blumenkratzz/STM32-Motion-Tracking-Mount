@@ -58,8 +58,8 @@
 
 
  // Vertical Motor parameters
-#define VERTICAL_MOTOR_POSITION_MIN 475    // Motor position corresponding to lowest angle
-#define VERTICAL_MOTOR_POSITION_MAX 1150   // Motor position corresponding to highest angle
+#define VERTICAL_MOTOR_POSITION_MIN 570    // Motor position corresponding to lowest angle
+#define VERTICAL_MOTOR_POSITION_MAX 1100   // Motor position corresponding to highest angle
 #define VERTICAL_MOTOR_POSITION_MIDDLE 800 // Motor middle position (home position)
 #define VERTICAL_MOTOR_ANGLE_MIN -17.5f //(-SENSOR_FOV_VERTICAL / 2) = 17.5 degrees
 #define VERTICAL_MOTOR_ANGLE_MAX 17.5f //(SENSOR_FOV_VERTICAL / 2)  = +17.5 degrees
