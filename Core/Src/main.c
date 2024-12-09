@@ -73,7 +73,7 @@
 
 // Define the number of frames to combine for temporal analysis (inter-frame)
 #define NUM_FRAMES_TO_COMBINE 4
-#define MINIMUM_TARGET_PIXELS 2 // [DEPRECATED], More sophisticated logic is currently used.
+#define MINIMUM_TARGET_BLOB_SIZE 4
 #define NUM_SENSORS 3
 
 I2C_HandleTypeDef *hi2c;
@@ -524,7 +524,7 @@ float calculateCentroidWeightedSum(float mlx90640To_2[SENSOR_ARRAY_SIZE], int *b
     return weightedSum;
 }
 
-int getZoneInfo(float centroidWeightedSum, int *headThresholdPixelCount, int *targetDetected)
+int getZoneInfo(float centroidWeightedSum, int *headThresholdPixelCount, int *targetDetected, int *blobSize)
 {
     int numZones = sizeof(zones) / sizeof(zones[0]);
 
@@ -533,14 +533,29 @@ int getZoneInfo(float centroidWeightedSum, int *headThresholdPixelCount, int *ta
         if (centroidWeightedSum >= zones[i].centroidWeightedSumMin && centroidWeightedSum < zones[i].centroidWeightedSumMax)
         {
             *headThresholdPixelCount = zones[i].headThresholdPixelCount;
-            return zones[i].zoneNumber;
+
+            // Check blob size requirement for the zone
+            if (*blobSize >= MINIMUM_TARGET_BLOB_SIZE)
+            {
+                *targetDetected = 1; // Target is valid
+                return zones[i].zoneNumber; // Return zone number
+            }
+            else
+            {
+                *targetDetected = 0; // Target invalid due to insufficient blob size
+                return -1;
+            }
+
+
         }
     }
-    // If centroidWeightedSum is less than 100, targetDetected = 0
+
+    // If centroidWeightedSum is out of range or blob size is too small
     *headThresholdPixelCount = 0;
-    *targetDetected=0;
+    *targetDetected = 0;
     return -1; // Indicates outside detection range
 }
+
 
 
 void setLEDState(int zoneInfo) // Example: PA5 used for LED
@@ -744,7 +759,7 @@ int main()
 		uint32_t masterTrackingDelay = 0;
 
 		// Initialize other variables as needed
-		for (int i = 0; i < NUM_SENSORS; i++)
+		for (int i = 2; i < NUM_SENSORS; i++)
 		{
 		    sensors[i].targetDetected = 0;
 		    sensors[i].highestRowGroupStart = 0;
@@ -760,16 +775,20 @@ int main()
 	    sprintf(MLX90640_Test_Buffer, "\n\nstart\r\n");
 	    HAL_UART_Transmit(&huart2, (uint8_t *)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
-		for (int i = 0; i < NUM_SENSORS; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
+		for (int i = 2; i < NUM_SENSORS; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
 		{
 #ifdef SENSOR_DEBUG
 			sprintf(MLX90640_Test_Buffer, "\r\nSENSOR_DEBUG info for sensor %.2d\r\n", i);
 			HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 #endif
+			//HAL_I2C_MspDeInit(&hi2c1);
+			//HAL_Delay(20);
+			//HAL_I2C_MspInit(&hi2c1);
 			int status = retriever(sensors[i].hi2c, sensors[i].eeMLX90640, &sensors[i].mlx90640,
 			                       sensors[i].mlx90640To, sensors[i].frame, &sensors[i].targetDetected,
 			                       &sensors[i].highestRowGroupStart, &sensors[i].highestColGroupStart,
 			                       NUM_FRAMES_TO_COMBINE);
+
 			if (status != 0)
 			{
 			    // Handle error if needed
@@ -805,7 +824,7 @@ int main()
 		int max_index = 0;
 		float max_centroid_weighted_sum = 0;
 		float detectionMetric = 0;
-		for (int i = 0; i < NUM_SENSORS; i++)
+		for (int i = 2; i < NUM_SENSORS; i++)
 		{
 		    /*if (sensors[i].centroidWeightedSum > max_centroid_weighted_sum)
 		    {
@@ -816,6 +835,7 @@ int main()
 				HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 #endif
 		    }*/
+
 		    if ((sensors[i].centroidWeightedSum * sensors[i].blobSize) > detectionMetric)
 		    {
 				detectionMetric=sensors[i].centroidWeightedSum * sensors[i].blobSize;
@@ -868,7 +888,7 @@ int main()
 		    case SENSOR_LEFT:
 		        // Sensor 1 has the highest average temperature
 
-			    targetZone = getZoneInfo(sensors[SENSOR_LEFT].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_LEFT].targetDetected);
+			    targetZone = getZoneInfo(sensors[SENSOR_LEFT].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_LEFT].targetDetected, &sensors[SENSOR_LEFT].blobSize);
 			    sprintf(MLX90640_Test_Buffer, "Sensor %d Zone: %d\n\r", SENSOR_LEFT, targetZone);
 			    HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
@@ -887,7 +907,7 @@ int main()
 
 		    case SENSOR_MIDDLE:
 		        // Sensor 2 has the highest average temperature
-			    targetZone= getZoneInfo(sensors[SENSOR_MIDDLE].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_MIDDLE].targetDetected);
+			    targetZone= getZoneInfo(sensors[SENSOR_MIDDLE].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_MIDDLE].targetDetected, &sensors[SENSOR_MIDDLE].blobSize);
 			    sprintf(MLX90640_Test_Buffer, "Sensor %d Zone: %d\n\r", SENSOR_MIDDLE, targetZone);
 			    HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 		    	sensors[SENSOR_MIDDLE].highestColumnIndex = avgBySector(sensors[SENSOR_MIDDLE].mlx90640To,
@@ -905,7 +925,7 @@ int main()
 
 		    case SENSOR_RIGHT:
 		        //Sensor 3 has the highest average temperature
-			    targetZone= getZoneInfo(sensors[SENSOR_RIGHT].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_RIGHT].targetDetected);
+			    targetZone= getZoneInfo(sensors[SENSOR_RIGHT].centroidWeightedSum, &headThresholdPixelCount, &sensors[SENSOR_RIGHT].targetDetected, &sensors[SENSOR_RIGHT].blobSize);
 			    sprintf(MLX90640_Test_Buffer, "Sensor %d Zone: %d\n\r", SENSOR_RIGHT, targetZone);
 			    HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
@@ -950,6 +970,9 @@ int main()
 #endif
 
 		}
+
+
+
 	    return 0;
 }
 
