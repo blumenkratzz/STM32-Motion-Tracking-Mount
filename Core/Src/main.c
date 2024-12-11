@@ -736,7 +736,7 @@ int main()
 	//System Initialization, GPIO Configuration, Peripheral Setup
 		initSystem();
 
-	//CHECK FOR ANY HI2C Pointers mismatch,
+	//CHECK FOR ANY HI2C Pointers mismatch:
 
 		sprintf(MLX90640_Test_Buffer, "\rhi2c1: %p &hi2c1: %p \r\n", hi2c1.Instance, &hi2c1);
 		HAL_UART_Transmit(&huart2, (uint8_t*)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
@@ -773,7 +773,7 @@ int main()
 		uint32_t masterTrackingDelay = 0;
 
 		// Initialize other variables as needed
-		for (int i = 1; i < NUM_SENSORS; i++)
+		for (int i = 0; i < NUM_SENSORS; i++)
 		{
 		    sensors[i].targetDetected = 0;
 		    sensors[i].highestRowGroupStart = 0;
@@ -789,7 +789,7 @@ int main()
 	    sprintf(MLX90640_Test_Buffer, "\n\nstart\r\n");
 	    HAL_UART_Transmit(&huart2, (uint8_t *)MLX90640_Test_Buffer, strlen(MLX90640_Test_Buffer), HAL_MAX_DELAY);
 
-		for (int i = 1; i < NUM_SENSORS; i++)//CURRENTLY SKIPING HI2C1 SO HAVE TO START AT 1, OTHERWISE START AT 0 TO INCLUDE HI2C1
+		for (int i = 0; i < NUM_SENSORS; i++)
 		{
 #ifdef SENSOR_DEBUG
 			sprintf(MLX90640_Test_Buffer, "\r\nSENSOR_DEBUG info for sensor %.2d\r\n", i);
@@ -839,7 +839,7 @@ int main()
 		float max_centroid_weighted_sum = 0;
 		int localTargetDetected = 0;
 		float detectionMetric = 0;
-		for (int i = 1; i < NUM_SENSORS; i++)
+		for (int i = 0; i < NUM_SENSORS; i++)
 		{
 		    /*if (sensors[i].centroidWeightedSum > max_centroid_weighted_sum)
 		    {
@@ -910,8 +910,7 @@ int main()
 			    sensors[SENSOR_LEFT].highestColumnIndex = avgBySector(sensors[SENSOR_LEFT].mlx90640To,
 		    	        &sensors[SENSOR_LEFT].highestRowGroupStart, &sensors[SENSOR_LEFT].highestColGroupStart, &sensors[SENSOR_LEFT].targetDetected, headThresholdPixelCount, targetZone);
 
-			    // After calling getZoneInfo(...), avgBySector(...)
-			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+			    // localTargetDetected is checked after avgBySector and getZoneInfo:
 			    localTargetDetected = sensors[max_index].targetDetected;
 
 			    if (localTargetDetected == 1)
@@ -959,8 +958,7 @@ int main()
 		    	sensors[SENSOR_MIDDLE].highestColumnIndex = avgBySector(sensors[SENSOR_MIDDLE].mlx90640To,
 		    	        &sensors[SENSOR_MIDDLE].highestRowGroupStart, &sensors[SENSOR_MIDDLE].highestColGroupStart, &sensors[SENSOR_MIDDLE].targetDetected, headThresholdPixelCount, targetZone);
 
-			    // After calling getZoneInfo(...), avgBySector(...)
-			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+			    // localTargetDetected is checked after avgBySector and getZoneInfo:
 			    localTargetDetected = sensors[max_index].targetDetected;
 
 			    if (localTargetDetected == 1)
@@ -1008,8 +1006,8 @@ int main()
 		    	sensors[SENSOR_RIGHT].highestColumnIndex = avgBySector(sensors[SENSOR_RIGHT].mlx90640To,
 		    	        &sensors[SENSOR_RIGHT].highestRowGroupStart, &sensors[SENSOR_RIGHT].highestColGroupStart, &sensors[SENSOR_RIGHT].targetDetected, headThresholdPixelCount, targetZone);
 
-			    // After calling getZoneInfo(...), avgBySector(...)
-			    // Suppose localTargetDetected is what avgBySector or getZoneInfo gave you:
+
+			    // localTargetDetected is checked after avgBySector and getZoneInfo:
 			    localTargetDetected = sensors[max_index].targetDetected;
 
 			    if (localTargetDetected == 1)
